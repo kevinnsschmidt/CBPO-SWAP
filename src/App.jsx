@@ -200,7 +200,7 @@ function Dropdown({label,value,options,onSelect,placeholder,multi=false,selected
             {filtered.map(p=>{
               const isSel=multi?selected.includes(p):value===p;
               return(
-                <div key={p} className="row-hover" onClick={()=>{onSelect(p);if(!multi)setOpen(false);}}
+                <div key={p} className="row-hover" onClick={()=>{onSelect(p);setOpen(false);}}
                   style={{padding:'9px 14px',fontSize:13,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',color:isSel?C.green:C.text}}>
                   {p}{isSel&&<Check size={12} color={C.green}/>}
                 </div>
@@ -805,6 +805,16 @@ export default function App(){
           </div>
           <div style={{marginBottom:22}}>
             <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Notes (Optional)</label>
+<div style={{marginBottom:16}}>
+            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
+            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
+              style={{...inp,cursor:'pointer',appearance:'none'}}>
+              <option value=''>Select GS level...</option>
+              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
             <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="e.g. Flexible on timing, open to 3-way…" rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}/>
           </div>
           <button onClick={submitListing} disabled={postStatus==='saving'||postStatus==='saved'}
