@@ -10,7 +10,7 @@ export default defineConfig({
       includeAssets: ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'CBPO Swap Board',
-        short_name: 'Swap Board',
+        short_name: 'CBPO Swap',
         description: 'CBP Officer Duty Station Exchange Network',
         theme_color: '#0f1623',
         background_color: '#080d16',
