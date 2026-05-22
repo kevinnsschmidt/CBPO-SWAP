@@ -95,7 +95,7 @@ function dbToListing(row){
   return {
     id: row.id, name: row.name, currentPort: row.current_port,
     desiredPorts: row.desired_ports, contact: row.contact,
-    notes: row.notes||'', createdAt: row.created_at,
+    notes: row.notes||'', gsLevel: row.gs_level||'', createdAt: row.created_at,
   };
 }
 function dbToLocks(rows){
@@ -463,7 +463,7 @@ export default function App(){
   const [queuePos,setQueuePos]     = useState({});
   const [loading,setLoading]       = useState(true);
   const [filter,setFilter]         = useState('');
-  const [form,setForm]             = useState({name:'',currentPort:'',desiredPorts:[],contact:'',notes:''});
+  const [form,setForm]             = useState({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:''});
   const [postStatus,setPostStatus] = useState(null);
 
   // Personal (stored in localStorage, not shared)
@@ -648,7 +648,7 @@ export default function App(){
       setPostStatus('error'); setTimeout(()=>setPostStatus(null),2500); return;
     }
     setPostStatus('saving');
-    const row={id:uuid(),name:form.name.trim(),current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim()};
+    const row={id:uuid(),name:form.name.trim(),current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel};
     const {error}=await supabase.from('listings').insert([row]);
     if(error){ console.error('Supabase error:', error.message); alert('Error: ' + error.message); setPostStatus('error'); setTimeout(()=>setPostStatus(null),2500); return; }
     setForm({name:'',currentPort:'',desiredPorts:[],contact:'',notes:''});
