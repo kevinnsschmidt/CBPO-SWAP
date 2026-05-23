@@ -1298,9 +1298,26 @@ export default function App(){
   async function sendSupportMessage(text){
     if(!user||!supportSession||!text.trim()) return;
     const msg={id:uuid(),chain_key:supportSession.chainKey,sender_id:user.id,sender_name:user.username,text,created_at:new Date().toISOString()};
-    await supabase.from('messages').insert([msg]);
+    const {error}=await supabase.from('messages').insert([msg]);
+    if(error){console.error('Support message error:',error.message);alert('Failed to send: '+error.message);return;}
     const readerId=isAdmin?'admin-'+user.id:user.id;
     await supabase.from('read_receipts').upsert({chain_key:supportSession.chainKey,user_id:readerId,read_at:new Date().toISOString()});
+  }
+
+  async function loadSupportThreads(){
+    if(!isAdmin) return;
+    const {data:supportMsgs}=await supabase.from('messages').select('chain_key,sender_id,sender_name,text,created_at').ilike('chain_key','support-%').order('created_at',{ascending:false});
+    if(supportMsgs?.length){
+      const threads={};
+      for(const m of supportMsgs){
+        const ck=m.chain_key;
+        if(!threads[ck]){
+          threads[ck]={chainKey:ck,username:m.sender_name,latest:m};
+        }
+        if(m.sender_name!==ADMIN) threads[ck].username=m.sender_name;
+      }
+      setSupportThreads(Object.values(threads));
+    }
   }
 
   function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
@@ -1441,6 +1458,18 @@ export default function App(){
             style={{flex:1,background:'none',border:'none',borderBottom:tab==='matches'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='matches'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
             Matches{totalMatches?` (${totalMatches})`:''}
           </button>
+          {isAdmin&&(
+            <button onClick={()=>{setSupportInbox(true);loadSupportThreads();}} className="tab"
+              style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.purple,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+              Support{unreadSupport>0?` (${unreadSupport})`:''}
+            </button>
+          )}
+          {isAdmin&&(
+            <button onClick={()=>setAdminPanel(true)} className="tab"
+              style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.red,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+              Users
+            </button>
+          )}
         </div>
 
         {/* BOARD */}
