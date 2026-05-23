@@ -964,19 +964,36 @@ function AdminPanel({onClose,currentUser}){
 }
 
 // ── Post Form ─────────────────────────────────────────────────────────────────
-function PostForm({currentUser,onPosted,onCancel}){
+function PostForm({currentUser,onPosted,onCancel,existingListing}){
   const C=useC();
-  const [form,setForm]=useState({currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:'',status:''});
+  const [form,setForm]=useState({
+    currentPort:existingListing?.currentPort||'',
+    desiredPorts:existingListing?.desiredPorts||[],
+    contact:existingListing?.contact||'',
+    notes:existingListing?.notes||'',
+    gsLevel:existingListing?.gsLevel||'',
+    status:existingListing?.status||'',
+  });
   const [postStatus,setPostStatus]=useState(null);
+  const isEdit=!!existingListing;
 
   async function submit(){
     if(!form.currentPort||!form.desiredPorts.length||!form.contact.trim()){
       setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;
     }
     setPostStatus('saving');
-    const row={id:uuid(),name:currentUser.username,current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel,status:form.status,user_id:currentUser.id};
-    const {error}=await supabase.from('listings').insert([row]);
-    if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
+    if(isEdit){
+      const {error}=await supabase.from('listings').update({
+        current_port:form.currentPort,desired_ports:form.desiredPorts,
+        contact:form.contact.trim(),notes:form.notes.trim(),
+        gs_level:form.gsLevel,status:form.status,
+      }).eq('id',existingListing.id);
+      if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
+    } else {
+      const row={id:uuid(),name:currentUser.username,current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel,status:form.status,user_id:currentUser.id};
+      const {error}=await supabase.from('listings').insert([row]);
+      if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
+    }
     setPostStatus('saved');
     setTimeout(()=>onPosted(),1200);
   }
@@ -1374,7 +1391,7 @@ export default function App(){
   }
 
   // ── Render: post form full screen ──
-  if(screen==='post') return(
+  if(screen==='post'||screen==='edit') return(
     <ThemeCtx.Provider value={C}>
       <div style={{minHeight:'100vh',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
         <style>{css}</style>
@@ -1384,10 +1401,10 @@ export default function App(){
             <button onClick={()=>setScreen(myListing?'main':'welcome')} style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4,display:'flex',alignItems:'center'}}>
               <ChevronLeft size={20} color={C.muted}/>
             </button>
-            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,letterSpacing:'0.05em',color:C.text}}>POST YOUR SWAP</span>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,letterSpacing:'0.05em',color:C.text}}>{screen==='edit'?'EDIT YOUR SWAP':'POST YOUR SWAP'}</span>
           </div>
         </div>
-        <PostForm currentUser={user} onPosted={()=>{fetchListings();setScreen('main');setTab('board');}} onCancel={()=>setScreen(myListing?'main':'welcome')}/>
+        <PostForm currentUser={user} existingListing={screen==='edit'?myListing:null} onPosted={()=>{fetchListings();setScreen('main');setTab('mypost');}} onCancel={()=>setScreen(myListing?'main':'welcome')}/>
       </div>
     </ThemeCtx.Provider>
   );
@@ -1481,6 +1498,10 @@ export default function App(){
             style={{flex:1,background:'none',border:'none',borderBottom:tab==='matches'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='matches'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
             Matches{totalMatches?` (${totalMatches})`:''}
           </button>
+          <button onClick={()=>setTab('mypost')} className="tab"
+            style={{flex:1,background:'none',border:'none',borderBottom:tab==='mypost'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='mypost'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+            My Post
+          </button>
           {isAdmin&&(
             <button onClick={()=>{setSupportInbox(true);loadSupportThreads();}} className="tab"
               style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.purple,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
@@ -1560,7 +1581,7 @@ export default function App(){
                         </div>
                       </div>
                       <div style={{display:'flex',gap:4,flexShrink:0}}>
-                        {isOwn&&<button onClick={()=>setScreen('post')} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,cursor:'pointer',color:C.muted,padding:'4px 8px',fontSize:11,fontFamily:"'Inter',sans-serif"}}>Edit</button>}
+                        {isOwn&&<button onClick={()=>setScreen('edit')} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,cursor:'pointer',color:C.muted,padding:'4px 8px',fontSize:11,fontFamily:"'Inter',sans-serif"}}>Edit</button>}
                         {canDelete&&<button onClick={()=>{if(window.confirm('Remove this listing?'))removeListing(l.id);}}
                           style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4}}>
                           <Trash2 size={13}/>
@@ -1594,6 +1615,87 @@ export default function App(){
                     onOpenChat={()=>openChat(ck,officers)}/>;
                 })}
               </>
+            )}
+          </div>
+        )}
+
+        {tab==='mypost'&&(
+          <div style={{padding:16}}>
+            {!myListing?(
+              <div style={{textAlign:'center',padding:60}}>
+                <div style={{fontSize:36,marginBottom:12}}>📋</div>
+                <div style={{fontWeight:600,fontSize:16,color:C.text,marginBottom:6}}>You haven't posted yet</div>
+                <div style={{fontSize:13,color:C.muted,marginBottom:24}}>Post your swap and get matched automatically</div>
+                <button onClick={()=>setScreen('post')}
+                  style={{background:C.green,border:'none',borderRadius:12,color:'#fff',padding:'14px 32px',fontSize:16,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                  + Post Your Swap
+                </button>
+              </div>
+            ):(
+              <div>
+                <div style={{background:C.surface,border:`1px solid ${C.greenBorder}`,borderRadius:12,padding:18,marginBottom:16}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
+                    <div>
+                      <div style={{fontSize:13,color:C.muted,marginBottom:4}}>Your current swap request</div>
+                      <div style={{fontSize:11,color:C.muted}}>Posted {formatDate(myListing.createdAt)}</div>
+                    </div>
+                    <div style={{display:'flex',gap:8}}>
+                      <button onClick={()=>setScreen('edit')}
+                        style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:7,color:C.blue,fontSize:13,fontWeight:600,padding:'7px 14px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                        Edit
+                      </button>
+                      <button onClick={()=>{if(window.confirm('Delete your listing?'))removeListing(myListing.id);}}
+                        style={{background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:7,color:C.red,fontSize:13,fontWeight:600,padding:'7px 14px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Current Station</div>
+                    <div style={{fontSize:15,fontWeight:700,color:C.red}}>{myListing.currentPort}</div>
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Desired Station(s)</div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                      {myListing.desiredPorts.map(p=>(
+                        <span key={p} style={{background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:6,padding:'4px 10px',fontSize:13,color:C.green,fontWeight:600}}>{p}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
+                    {myListing.gsLevel&&<span style={{fontSize:12,fontWeight:700,color:C.purple,background:C.purpleDim,border:`1px solid ${C.purpleBorder}`,borderRadius:5,padding:'3px 10px'}}>{myListing.gsLevel}</span>}
+                    {myListing.status&&<span style={{fontSize:12,fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:5,padding:'3px 10px'}}>{myListing.status}</span>}
+                  </div>
+                  <div style={{marginBottom:myListing.notes?12:0}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>Contact</div>
+                    <div style={{fontSize:13,color:C.text}}>📬 {myListing.contact}</div>
+                  </div>
+                  {myListing.notes&&(
+                    <div>
+                      <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>Notes</div>
+                      <div style={{fontSize:13,color:C.subtle,lineHeight:1.5}}>{myListing.notes}</div>
+                    </div>
+                  )}
+                </div>
+                {/* Queue positions */}
+                <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:16}}>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Your Queue Positions</div>
+                  {myListing.desiredPorts.map(port=>{
+                    const pos=queuePos[myListing.id]?.[port];
+                    return(
+                      <div key={port} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:`1px solid ${C.border}`}}>
+                        <div style={{fontSize:13,color:C.text}}>{port}</div>
+                        <span style={{fontSize:12,fontWeight:700,padding:'2px 10px',borderRadius:4,
+                          background:pos===1?C.greenDim:pos===2?C.goldDim:'rgba(255,255,255,0.05)',
+                          border:`1px solid ${pos===1?C.greenBorder:pos===2?C.goldBorder:'rgba(255,255,255,0.08)'}`,
+                          color:pos===1?C.green:pos===2?C.gold:C.muted}}>
+                          #{pos} in line
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         )}
