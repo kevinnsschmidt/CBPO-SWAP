@@ -88,6 +88,7 @@ const PORTS = [
 const LOCK_MS = 48 * 60 * 60 * 1000;
 const POLL_MS = 15 * 1000;
 const ADMIN = 'kevinsschmidt';
+const ADMIN_EMAIL = 'kevinsschmidt@outlook.com';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const uuid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -281,6 +282,98 @@ function Dropdown({label,value,options,onSelect,placeholder,multi=false,selected
   );
 }
 
+// ── Admin Reset Form ──────────────────────────────────────────────────────────
+function AdminResetForm({onBack}){
+  const C=useC();
+  const [newPass,setNewPass]=useState('');
+  const [confirm,setConfirm]=useState('');
+  const [token,setToken]=useState('');
+  const [step,setStep]=useState('verify'); // verify | reset | done
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [generatedToken,setGeneratedToken]=useState('');
+
+  async function requestReset(){
+    setLoading(true);setError('');
+    // Check admin exists
+    const {data}=await supabase.from('users').select('id').eq('username',ADMIN).maybeSingle();
+    if(!data){setError('Admin account not found');setLoading(false);return;}
+    // Generate a 6-digit token and store it temporarily
+    const tok=Math.floor(100000+Math.random()*900000).toString();
+    await supabase.from('users').update({reset_token:tok,reset_expires:new Date(Date.now()+15*60000).toISOString()}).eq('username',ADMIN);
+    // Show token (in production you'd email this, for now display it)
+    setGeneratedToken(tok);
+    setStep('token');
+    setLoading(false);
+  }
+
+  async function verifyToken(){
+    setLoading(true);setError('');
+    const {data}=await supabase.from('users').select('reset_token,reset_expires').eq('username',ADMIN).maybeSingle();
+    if(!data||data.reset_token!==token){setError('Invalid token');setLoading(false);return;}
+    if(new Date(data.reset_expires)<new Date()){setError('Token expired — request a new one');setLoading(false);return;}
+    setStep('reset');setLoading(false);
+  }
+
+  async function doReset(){
+    if(newPass.length<6){setError('Password must be at least 6 characters');return;}
+    if(newPass!==confirm){setError('Passwords do not match');return;}
+    setLoading(true);setError('');
+    const hash=await hashPassword(ADMIN,newPass);
+    await supabase.from('users').update({password_hash:hash,reset_token:null,reset_expires:null}).eq('username',ADMIN);
+    setStep('done');setLoading(false);
+  }
+
+  return(
+    <div style={{marginTop:16,background:C.surface2,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>🔐 Admin Password Reset</div>
+      {step==='verify'&&(
+        <>
+          <p style={{fontSize:12,color:C.subtle,marginBottom:12,lineHeight:1.5}}>
+            This generates a one-time reset token. Copy it and use it to set a new password.
+          </p>
+          {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+          <button onClick={requestReset} disabled={loading}
+            style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+            {loading?'Generating…':'Generate Reset Token'}
+          </button>
+        </>
+      )}
+      {step==='token'&&(
+        <>
+          <p style={{fontSize:12,color:C.subtle,marginBottom:8,lineHeight:1.5}}>Your one-time token (valid 15 min):</p>
+          <div style={{background:C.surface,border:`1px solid ${C.greenBorder}`,borderRadius:7,padding:'10px 14px',fontSize:22,fontWeight:800,letterSpacing:'0.2em',color:C.green,textAlign:'center',marginBottom:12,fontFamily:'monospace'}}>
+            {generatedToken}
+          </div>
+          <input value={token} onChange={e=>setToken(e.target.value)} placeholder="Enter token above" style={{...{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif"},marginBottom:8}}/>
+          {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+          <button onClick={verifyToken} disabled={loading}
+            style={{width:'100%',background:C.blue,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+            {loading?'Verifying…':'Verify Token'}
+          </button>
+        </>
+      )}
+      {step==='reset'&&(
+        <>
+          <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="New password" style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
+          <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirm new password" style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
+          {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+          <button onClick={doReset} disabled={loading}
+            style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+            {loading?'Saving…':'Set New Password'}
+          </button>
+        </>
+      )}
+      {step==='done'&&(
+        <div style={{textAlign:'center',color:C.green,fontSize:13,fontWeight:600}}>
+          ✓ Password updated! <button onClick={onBack} style={{background:'none',border:'none',color:C.blue,cursor:'pointer',fontSize:13,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>Log in</button>
+        </div>
+      )}
+      {step!=='done'&&<button onClick={onBack} style={{width:'100%',background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:12,marginTop:10,fontFamily:"'Inter',sans-serif"}}>Cancel</button>}
+    </div>
+  );
+}
+
 // ── Auth Screen ───────────────────────────────────────────────────────────────
 function AuthScreen({onAuth}){
   const C=useC();
@@ -377,6 +470,16 @@ function AuthScreen({onAuth}){
             </div>
           </div>
         )}
+        {mode==='login'&&(
+          <div style={{textAlign:'center',marginTop:8,fontSize:11,color:C.muted}}>
+            Admin?{' '}
+            <button onClick={()=>setMode('adminreset')}
+              style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:11,padding:0,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>
+              Reset admin password
+            </button>
+          </div>
+        )}
+        {mode==='adminreset'&&<AdminResetForm onBack={()=>setMode('login')}/>}
       </div>
       <div style={{marginTop:20,fontSize:11,color:C.muted,textAlign:'center'}}>
         Unofficial peer tool — not affiliated with CBP
@@ -1308,6 +1411,7 @@ export default function App(){
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chain_key=eq.${chainKey}`},payload=>{
         const r=payload.new;
         setChatMessages(prev=>[...prev,{id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}]);
+        if(r.sender_id!==user?.id) playMessageSound();
       }).subscribe();
   }
   function closeChat(){if(realtimeRef.current){supabase.removeChannel(realtimeRef.current);realtimeRef.current=null;}setChatSession(null);}
