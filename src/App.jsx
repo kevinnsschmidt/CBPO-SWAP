@@ -631,113 +631,170 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
   const isMyMatch=myListing&&officers.some(o=>o.id===myListing.id);
   const isParticipant=isMyMatch;
   const rankColor=priorityRank===1?C.green:priorityRank===2?C.gold:C.muted;
-  const rankBg=priorityRank===1?C.greenDim:priorityRank===2?C.goldDim:'transparent';
   const rankBorder=priorityRank===1?C.greenBorder:priorityRank===2?C.goldBorder:C.border;
 
+  // For 3-way, show stacked cards instead of horizontal
+  const isHorizontal=type===2;
+
   return(
-    <div className="fade-in" style={{background:allLocked?C.greenDim:C.surface,border:`1px solid ${allLocked?C.greenBorder:isMyMatch?C.blueBorder:type===3?C.goldBorder:C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
-      <div style={{padding:'12px 14px 10px',borderBottom:`1px solid ${allLocked?C.greenBorder:C.border}`}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <Link2 size={11} color={type===3?C.gold:C.green}/>
-            <span style={{fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:type===3?C.gold:C.green}}>
-              {type===2?'Direct 2-Way Match':'3-Way Chain Match'}
-            </span>
-            {isMyMatch&&<span style={{fontSize:10,fontWeight:700,color:C.blue,background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:3,padding:'1px 5px'}}>YOURS</span>}
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <span style={{fontSize:10,fontWeight:800,color:rankColor,background:rankBg,border:`1px solid ${rankBorder}`,borderRadius:4,padding:'2px 7px'}}>
-              {priorityRank===1?'⭐ #1':`#${priorityRank}`}
-            </span>
-            <span style={{fontSize:11,color:allLocked?C.green:C.muted,fontWeight:allLocked?700:400}}>{lockedCount}/{officers.length} 🔒</span>
-          </div>
+    <div className="fade-in" style={{background:allLocked?C.greenDim:C.surface,border:`1px solid ${allLocked?C.greenBorder:isMyMatch?C.blueBorder:C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+
+      {/* Header */}
+      <div style={{padding:'8px 12px',borderBottom:`1px solid ${allLocked?C.greenBorder:C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <Link2 size={10} color={type===3?C.gold:C.green}/>
+          <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:type===3?C.gold:C.green}}>
+            {type===2?'Direct 2-Way Match':'3-Way Chain Match'}
+          </span>
+          {isMyMatch&&<span style={{fontSize:9,fontWeight:700,color:C.blue,background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:3,padding:'1px 4px'}}>YOURS</span>}
         </div>
-        <div style={{display:'flex',gap:3}}>
-          {Array.from({length:officers.length}).map((_,i)=>(
-            <div key={i} style={{height:3,flex:1,borderRadius:2,background:i<lockedCount?C.green:C.border,transition:'background 0.3s'}}/>
-          ))}
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <span style={{fontSize:9,fontWeight:800,color:rankColor,border:`1px solid ${rankBorder}`,borderRadius:4,padding:'1px 6px'}}>
+            {priorityRank===1?'⭐ #1':`#${priorityRank}`}
+          </span>
+          <span style={{fontSize:10,color:allLocked?C.green:C.muted}}>{lockedCount}/{officers.length} 🔒</span>
         </div>
       </div>
+
+      {/* All locked banner */}
       {allLocked&&(
-        <div style={{padding:'10px 14px',background:C.greenDim,borderBottom:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:20}}>✅</span>
-          <div>
-            <div style={{fontSize:13,fontWeight:700,color:C.green}}>All parties locked in</div>
-            <div style={{fontSize:11,color:C.subtle,marginTop:1}}>Use the chat below to coordinate, then initiate HR</div>
-          </div>
+        <div style={{padding:'8px 12px',background:C.greenDim,borderBottom:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:16}}>✅</span>
+          <div style={{fontSize:12,fontWeight:700,color:C.green}}>All parties locked in — coordinate in chat then initiate HR</div>
         </div>
       )}
-      <div style={{padding:'10px 14px',display:'flex',flexDirection:'column',gap:6}}>
-        {lockState.map(({officer,lock,active},i)=>{
-          const countdown=active?formatCountdown(lock.expiresAt):null;
-          const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
-          const isMyRow=currentUser&&officer.userId===currentUser.id;
-          return(
-            <div key={officer.id}>
-              <div style={{background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px',transition:'background 0.2s'}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:isMyRow?8:0}}>
-                  <div style={{display:'flex',alignItems:'center',gap:7}}>
-                    <div style={{width:7,height:7,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0}}/>
-                    <div>
-                      <div style={{display:'flex',alignItems:'center',gap:6}}>
-                        <span style={{fontSize:12,color:C.red,fontWeight:600}}>{officer.currentPort.split(',')[0]}</span>
-                        <ArrowRight size={10} color={C.muted}/>
-                        <span style={{fontSize:12,color:C.green}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
-                      </div>
-                      <div style={{fontSize:10,color:C.muted,marginTop:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
-                      {(isParticipant||isAdmin)&&<div style={{fontSize:11,color:C.subtle,marginTop:1}}>📬 {officer.contact}</div>}
-                    </div>
+
+      {/* Officers — horizontal for 2-way, stacked for 3-way */}
+      {isHorizontal?(
+        <div style={{display:'flex',alignItems:'stretch',padding:'12px'}}>
+          {lockState.map(({officer,lock,active},i)=>{
+            const countdown=active?formatCountdown(lock.expiresAt):null;
+            const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
+            const isMyRow=currentUser&&officer.userId===currentUser.id;
+            const isLast=i===lockState.length-1;
+            return(
+              <div key={officer.id} style={{display:'flex',alignItems:'center',flex:1}}>
+                {/* Officer card */}
+                <div style={{flex:1,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:4}}>
+                    <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0}}/>
+                    <span style={{fontSize:13,fontWeight:700,color:C.red}}>{officer.currentPort.split(',')[0]}</span>
+                    <ArrowRight size={10} color={C.muted}/>
+                    <span style={{fontSize:12,color:C.green}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
                   </div>
-                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
-                    {officer.gsLevel&&<span style={{fontSize:10,fontWeight:700,color:C.purple,background:C.purpleDim,border:`1px solid ${C.purpleBorder}`,borderRadius:3,padding:'1px 5px'}}>{officer.gsLevel}</span>}
-                    {officer.status&&<span style={{fontSize:10,fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:3,padding:'1px 5px'}}>{officer.status}</span>}
+                  <div style={{fontSize:10,color:C.muted,marginBottom:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
+                  {(isParticipant||isAdmin)&&<div style={{fontSize:10,color:C.subtle}}>📬 {officer.contact}</div>}
+                  <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
+                    {officer.gsLevel&&<span style={{fontSize:9,fontWeight:700,color:C.purple}}>{officer.gsLevel}</span>}
+                    {officer.status&&<span style={{fontSize:9,fontWeight:700,color:C.gold}}>{officer.status}</span>}
                   </div>
-                </div>
-                {isMyRow&&(
-                  active?(
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
-                      <div style={{display:'flex',alignItems:'center',gap:5}}>
-                        <Lock size={10} color={soonExpire?C.gold:C.green}/>
-                        <span style={{fontSize:11,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
+                  {/* Lock status */}
+                  {active?(
+                    <div style={{marginTop:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:4}}>
+                        <Lock size={9} color={soonExpire?C.gold:C.green}/>
+                        <span style={{fontSize:10,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
                       </div>
-                      <button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
-                        style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,color:C.muted,fontSize:11,padding:'3px 9px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                      {isMyRow&&<button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
+                        style={{background:'none',border:`1px solid ${C.border}`,borderRadius:4,color:C.muted,fontSize:10,padding:'2px 7px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
                         Release
-                      </button>
+                      </button>}
                     </div>
-                  ):(
-                    <button onClick={()=>{if(window.confirm('Lock in? This signals you are ready to proceed. Hold expires in 48 hours.'))onLock(officer.id);}}
-                      style={{width:'100%',marginTop:8,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:6,color:C.green,fontSize:12,fontWeight:600,padding:'7px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-                      <Lock size={11}/>Lock In (My Confirmation)
+                  ):isMyRow?(
+                    <button onClick={()=>{if(window.confirm('Lock in? Hold expires in 48 hours.'))onLock(officer.id);}}
+                      style={{width:'100%',marginTop:6,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,color:C.green,fontSize:10,fontWeight:600,padding:'5px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
+                      <Lock size={9}/>Lock In
                     </button>
-                  )
-                )}
-                {!isMyRow&&active&&(
-                  <div style={{marginTop:6,fontSize:11,color:C.green,display:'flex',alignItems:'center',gap:4}}>
-                    <Lock size={10}/>{countdown||'Locked in'}
+                  ):(
+                    <div style={{marginTop:6,fontSize:10,color:C.muted}}>Awaiting confirmation…</div>
+                  )}
+                </div>
+                {/* Arrows between officers */}
+                {!isLast&&(
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 6px',flexShrink:0,gap:4}}>
+                    <span style={{fontSize:12,color:C.muted}}>→</span>
+                    <span style={{fontSize:12,color:C.muted}}>←</span>
                   </div>
                 )}
-                {!isMyRow&&!active&&(
-                  <div style={{marginTop:6,fontSize:11,color:C.muted}}>Awaiting their confirmation…</div>
+                {/* Chat button on far right for 2-way */}
+                {isLast&&(isParticipant||isAdmin)&&(
+                  <div style={{paddingLeft:8,flexShrink:0}}>
+                    <button onClick={onOpenChat}
+                      style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:11,fontWeight:600,padding:'8px 10px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',flexDirection:'column',alignItems:'center',gap:4,whiteSpace:'nowrap'}}>
+                      <MessageSquare size={14}/>
+                      <span>Open Match</span>
+                      <span>Chat</span>
+                      {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 6px',fontSize:10,fontWeight:700}}>{unreadMsgs}</span>}
+                    </button>
+                  </div>
                 )}
               </div>
-              {i<officers.length-1&&<div style={{display:'flex',justifyContent:'center',padding:'3px 0'}}><ArrowRight size={12} color={C.muted}/></div>}
-            </div>
-          );
-        })}
-      </div>
-      {(isParticipant||isAdmin)&&(
-      <div style={{padding:'0 14px 12px'}}>
-        <button onClick={onOpenChat}
-          style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:13,fontWeight:600,padding:'9px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
-          <MessageSquare size={14}/>Open Match Chat
-          {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:11,fontWeight:700,marginLeft:4}}>{unreadMsgs} new</span>}
-        </button>
-      </div>
+            );
+          })}
+        </div>
+      ):(
+        /* 3-way: stacked layout */
+        <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:6}}>
+          {lockState.map(({officer,lock,active},i)=>{
+            const countdown=active?formatCountdown(lock.expiresAt):null;
+            const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
+            const isMyRow=currentUser&&officer.userId===currentUser.id;
+            return(
+              <div key={officer.id}>
+                <div style={{background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6}}>
+                      <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0}}/>
+                      <div>
+                        <div style={{display:'flex',alignItems:'center',gap:5}}>
+                          <span style={{fontSize:13,fontWeight:700,color:C.red}}>{officer.currentPort.split(',')[0]}</span>
+                          <ArrowRight size={10} color={C.muted}/>
+                          <span style={{fontSize:12,color:C.green}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
+                        </div>
+                        <div style={{fontSize:10,color:C.muted,marginTop:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
+                        {(isParticipant||isAdmin)&&<div style={{fontSize:10,color:C.subtle}}>📬 {officer.contact}</div>}
+                      </div>
+                    </div>
+                    <div style={{display:'flex',gap:3,flexShrink:0}}>
+                      {officer.gsLevel&&<span style={{fontSize:9,fontWeight:700,color:C.purple}}>{officer.gsLevel}</span>}
+                      {officer.status&&<span style={{fontSize:9,fontWeight:700,color:C.gold}}>{officer.status}</span>}
+                    </div>
+                  </div>
+                  {active?(
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:4}}>
+                        <Lock size={9} color={soonExpire?C.gold:C.green}/>
+                        <span style={{fontSize:10,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
+                      </div>
+                      {isMyRow&&<button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
+                        style={{background:'none',border:`1px solid ${C.border}`,borderRadius:4,color:C.muted,fontSize:10,padding:'2px 7px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Release</button>}
+                    </div>
+                  ):isMyRow?(
+                    <button onClick={()=>{if(window.confirm('Lock in? Hold expires in 48 hours.'))onLock(officer.id);}}
+                      style={{width:'100%',marginTop:4,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,color:C.green,fontSize:10,fontWeight:600,padding:'5px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
+                      <Lock size={9}/>Lock In
+                    </button>
+                  ):(
+                    <div style={{marginTop:4,fontSize:10,color:C.muted}}>Awaiting confirmation…</div>
+                  )}
+                </div>
+                {i<officers.length-1&&<div style={{display:'flex',justifyContent:'center',padding:'2px 0'}}><ArrowRight size={11} color={C.muted}/></div>}
+              </div>
+            );
+          })}
+          {(isParticipant||isAdmin)&&(
+            <button onClick={onOpenChat}
+              style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:12,fontWeight:600,padding:'8px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:4}}>
+              <MessageSquare size={13}/>Open Match Chat
+              {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:10,fontWeight:700,marginLeft:4}}>{unreadMsgs}</span>}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
 }
+
 
 // ── Support Chat ──────────────────────────────────────────────────────────────
 function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose,onDeleteMessage}){
@@ -1178,7 +1235,7 @@ export default function App(){
       const currCount=currActive.length;
       const prevCount=last.lockCounts?.[ck]||0;
       const wasKnown=last.chainKeys?.includes(ck);
-      if(!wasKnown)newNotifItems.push({type:'match_found',title:'New match found!',body:`Your listing matched a ${officers.length}-way swap. Check the Matches tab.`});
+      const iAmInChain=officers.some(o=>o.id===myListing?.id); if(!wasKnown&&iAmInChain)newNotifItems.push({type:'match_found',title:'New match found!',body:`Your listing matched a ${officers.length}-way swap. Check the Matches tab.`});
       if(wasKnown&&currCount>prevCount)newNotifItems.push({type:'lock_placed',title:'Match updated',body:`${currCount}/${officers.length} officers confirmed.`});
       if(currCount===officers.length&&!last.allLockedKeys?.includes(ck))newNotifItems.push({type:'all_locked',title:'All parties confirmed! 🎉',body:'Everyone is ready. Open the match chat to coordinate.'});
       const {data:msgs}=await supabase.from('messages').select('*').eq('chain_key',ck).order('created_at');
@@ -1582,7 +1639,7 @@ export default function App(){
                       </div>
                       <div style={{display:'flex',gap:4,flexShrink:0}}>
                         {isOwn&&<button onClick={()=>setScreen('edit')} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,cursor:'pointer',color:C.muted,padding:'4px 8px',fontSize:11,fontFamily:"'Inter',sans-serif"}}>Edit</button>}
-                        {canDelete&&<button onClick={()=>{if(window.confirm('Remove this listing?'))removeListing(l.id);}}
+                        {isAdmin&&!isOwn&&<button onClick={()=>{if(window.confirm('Remove this listing?'))removeListing(l.id);}}
                           style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4}}>
                           <Trash2 size={13}/>
                         </button>}
