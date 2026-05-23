@@ -724,7 +724,15 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
             );
           })}
         </div>
-
+        {(isParticipant||isAdmin)&&(
+          <div style={{padding:'0 12px 12px'}}>
+            <button onClick={onOpenChat}
+              style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:13,fontWeight:600,padding:'9px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+              <MessageSquare size={14}/>Open Match Chat
+              {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:11,fontWeight:700,marginLeft:4}}>{unreadMsgs} new</span>}
+            </button>
+          </div>
+        )}
     </div>
   );
 }
@@ -1130,8 +1138,38 @@ export default function App(){
 
   async function init(){
     setLoading(true);
-    await Promise.all([fetchListings(),fetchLocks()]);
+    const [listRes,lockRes]=await Promise.all([
+      supabase.from('listings').select('*').order('created_at'),
+      supabase.from('locks').select('*').gt('expires_at',new Date().toISOString()),
+    ]);
+    const ls=(listRes.data||[]).map(dbToListing);
+    const lk=dbToLocks(lockRes.data||[]);
+    setListings(ls);
+    setLocks(lk);
     setLoading(false);
+    // Seed lastRef so first poll doesn't fire stale notifications
+    if(user){
+      const myListing=ls.find(l=>l.userId===user.id);
+      if(myListing){
+        const initChains=computeChains(ls);
+        const now=Date.now();
+        const myChains=[...initChains.two,...initChains.three].filter(o=>o.some(x=>x.id===myListing.id));
+        // Get current message counts
+        const msgCounts={};
+        for(const officers of myChains){
+          const ck=getChainKey(officers);
+          const {data:msgs}=await supabase.from('messages').select('id').eq('chain_key',ck);
+          msgCounts[ck]=msgs?.length||0;
+        }
+        lastRef.current={
+          chainKeys:myChains.map(getChainKey),
+          lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
+          allLockedKeys:myChains.filter(o=>{const ck=getChainKey(o);return Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length===o.length;}).map(getChainKey),
+          msgCounts,
+          supportThreadCount:0,
+        };
+      }
+    }
   }
   async function fetchListings(){const {data}=await supabase.from('listings').select('*').order('created_at');setListings((data||[]).map(dbToListing));}
   async function fetchLocks(){const {data}=await supabase.from('locks').select('*').gt('expires_at',new Date().toISOString());setLocks(dbToLocks(data||[]));}
