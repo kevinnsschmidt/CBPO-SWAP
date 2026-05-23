@@ -28,21 +28,66 @@ const DARK = {
 };
 
 const PORTS = [
-  'Anchorage, AK','Atlanta, GA','Baltimore/Washington, MD','Boston, MA',
-  'Brownsville, TX','Buffalo, NY','Calais, ME','Calexico, CA',
-  "Chicago O'Hare, IL",'Dallas/Fort Worth, TX','Del Rio, TX','Denver, CO',
-  'Detroit, MI','Douglas, AZ','Eagle Pass, TX','El Paso, TX',
-  'Hidalgo/Pharr, TX','Honolulu, HI','Houston, TX','JFK, NY',
-  'Laredo, TX','Los Angeles, CA','Louisville, KY','McAllen, TX',
-  'Memphis, TN','Miami, FL','Minneapolis, MN','Nashville, TN',
-  'Newark, NJ','New Orleans, LA','Nogales, AZ','Orlando, FL',
-  'Philadelphia, PA','Phoenix, AZ','Portland, OR','Presidio, TX',
-  'San Antonio, TX','San Diego, CA','San Francisco, CA','San Juan, PR',
-  'Seattle, WA','Tampa, FL','Tucson, AZ','Washington Dulles, VA','Yuma, AZ',
+  // ATLANTA Field Office
+  'Atlanta, GA (Hartsfield-Jackson)','Charlotte, NC','Nashville, TN','Memphis, TN',
+  'Savannah, GA','Jacksonville, FL',
+  // BALTIMORE Field Office
+  'Baltimore/Washington (BWI), MD','Washington Dulles, VA','Richmond, VA','Norfolk, VA',
+  // BOSTON Field Office
+  'Boston, MA (Logan)','Portland, ME','Calais, ME','Houlton, ME','Burlington, VT',
+  'Highgate Springs, VT','Providence, RI','Manchester, NH','Hartford, CT',
+  // BUFFALO Field Office
+  'Buffalo, NY (Niagara Falls)','Niagara Falls, NY','Rochester, NY','Syracuse, NY',
+  'Ogdensburg, NY','Alexandria Bay, NY','Champlain, NY','Massena, NY',
+  // CHICAGO Field Office
+  "Chicago O'Hare, IL",'Indianapolis, IN','Louisville, KY','Cincinnati, OH','Columbus, OH',
+  'Cleveland, OH','Minneapolis, MN','Milwaukee, WI','Kansas City, MO','St. Louis, MO',
+  'Omaha, NE','Des Moines, IA',
+  // DETROIT Field Office
+  'Detroit, MI (Metropolitan)','Port Huron, MI','Sault Ste. Marie, MI','Flint, MI','Grand Rapids, MI',
+  // EL PASO Field Office
+  'El Paso, TX','El Paso, TX (Airport)','El Paso, TX (Ysleta/Zaragoza)','Santa Teresa, NM',
+  'Presidio, TX','Fabens, TX','Fort Hancock, TX','Albuquerque, NM',
+  // HOUSTON Field Office
+  'Houston, TX (IAH)','Houston, TX (Hobby)','Galveston, TX','Port Arthur, TX',
+  'Corpus Christi, TX','Austin, TX','Dallas/Fort Worth, TX','San Antonio, TX',
+  // LAREDO Field Office
+  'Laredo, TX','Laredo, TX (Colombia Bridge)','Eagle Pass, TX','Del Rio, TX',
+  'Roma, TX','Rio Grande City, TX','Piedras Negras, TX',
+  // LOS ANGELES Field Office
+  'Los Angeles, CA (LAX)','Los Angeles, CA (Seaport)','Long Beach, CA','Las Vegas, NV',
+  'Ontario, CA','Phoenix, AZ','Denver, CO','Salt Lake City, UT','Reno, NV',
+  // MIAMI Field Office
+  'Miami, FL (MIA)','Miami, FL (Seaport)','Fort Lauderdale, FL','West Palm Beach, FL',
+  'Orlando, FL','Port Everglades, FL','Port Canaveral, FL',
+  // NEW ORLEANS Field Office
+  'New Orleans, LA','New Orleans, LA (Airport)','Baton Rouge, LA','Mobile, AL','Gulfport, MS',
+  // NEW YORK Field Office
+  'JFK, NY','Newark, NJ','Philadelphia, PA','Pittsburgh, PA','Harrisburg, PA','New York, NY (Seaport)',
+  // PORTLAND Field Office
+  'Portland, OR','Eugene, OR','Medford, OR','Astoria, OR','Longview, WA',
+  // SAN DIEGO Field Office
+  'San Diego, CA (San Ysidro)','San Diego, CA (Otay Mesa)','San Diego, CA (Airport)',
+  'Calexico, CA (East)','Calexico, CA (West)','Tecate, CA','Andrade, CA',
+  // SAN FRANCISCO Field Office
+  'San Francisco, CA (SFO)','Oakland, CA','Sacramento, CA','Fresno, CA','San Jose, CA',
+  'Stockton, CA','Anchorage, AK','Juneau, AK','Fairbanks, AK','Honolulu, HI','Maui, HI',
+  // SAN JUAN Field Office
+  'San Juan, PR','Ponce, PR','Mayaguez, PR','Fajardo, PR','St. Thomas, USVI','St. Croix, USVI',
+  // SEATTLE Field Office
+  'Seattle, WA (SeaTac)','Seattle, WA (Seaport)','Tacoma, WA','Bellingham, WA','Blaine, WA',
+  'Sumas, WA','Spokane, WA','Oroville, WA','Danville, WA','Lynden, WA','Point Roberts, WA',
+  // TAMPA Field Office
+  'Tampa, FL','Fort Myers, FL','Sarasota, FL','Key West, FL',
+  // TUCSON Field Office
+  'Tucson, AZ','Nogales, AZ','Douglas, AZ','Lukeville, AZ','Naco, AZ','Sasabe, AZ','Yuma, AZ',
+  // SOUTHWEST BORDER additional
+  'Hidalgo/Pharr, TX','McAllen, TX','Brownsville, TX',
 ].sort();
 
 const LOCK_MS = 48 * 60 * 60 * 1000;
 const POLL_MS = 60 * 1000;
+const ADMIN = 'kevinsschmidt';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const uuid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -548,7 +593,7 @@ function ChatPanel({chainKey,officers,messages,loading,currentUser,myListing,onS
 }
 
 // ── Match Card (formerly Chain Card) ─────────────────────────────────────────
-function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,currentUser,priorityRank,unreadMsgs=0,onOpenChat}){
+function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,currentUser,priorityRank,unreadMsgs=0,onOpenChat,isAdmin=false}){
   const C=useC();
   const now=Date.now();
   const lockState=officers.map(o=>{
@@ -615,7 +660,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
                         <span style={{fontSize:12,color:C.green}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
                       </div>
                       <div style={{fontSize:10,color:C.muted,marginTop:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
-                      {isParticipant&&<div style={{fontSize:11,color:C.subtle,marginTop:1}}>📬 {officer.contact}</div>}
+                      {(isParticipant||isAdmin)&&<div style={{fontSize:11,color:C.subtle,marginTop:1}}>📬 {officer.contact}</div>}
                     </div>
                   </div>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
@@ -779,6 +824,7 @@ export default function App(){
   const realtimeRef=useRef(null);
 
   const myListing=listings.find(l=>l.userId===user?.id)||null;
+  const isAdmin=user?.username===ADMIN;
 
   // Auto-open chat if tapped from notification
   useEffect(()=>{
@@ -1010,7 +1056,10 @@ export default function App(){
             </div>
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:17,fontWeight:800,letterSpacing:'0.06em',lineHeight:1,color:C.text}}>CBPO SWAP BOARD</div>
-              <div style={{fontSize:10,color:C.muted,marginTop:1}}>@{user.username}</div>
+              <div style={{fontSize:10,color:C.muted,marginTop:1,display:'flex',alignItems:'center',gap:4}}>
+                @{user.username}
+                {isAdmin&&<span style={{fontSize:9,fontWeight:700,color:'#fff',background:C.red,borderRadius:3,padding:'0px 4px'}}>ADMIN</span>}
+              </div>
             </div>
             <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
               {totalMatches>0&&<div style={{background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:20,padding:'3px 9px',fontSize:11,fontWeight:700,color:C.gold}}>{totalMatches} MATCH{totalMatches!==1?'ES':''}</div>}
@@ -1081,6 +1130,7 @@ export default function App(){
                 </div>
                 {filtered.map(l=>{
                   const isOwn=user&&l.userId===user.id;
+                  const canDelete=isOwn||isAdmin;
                   const myQueueNums=Object.values(queuePos[l.id]||{});
                   const qNum=myQueueNums.length>0?Math.min(...myQueueNums):'?';
                   return(
@@ -1092,22 +1142,22 @@ export default function App(){
                           <ArrowRight size={10} color={C.muted}/>
                           <span style={{fontSize:13,color:C.green}}>{l.desiredPorts.map(p=>p.split(',')[0]).join(', ')}</span>
                         </div>
+                        {isAdmin&&<div style={{fontSize:12,color:C.text,fontWeight:500,marginTop:2}}>{l.name} · 📬 {l.contact}</div>}
                         <div style={{display:'flex',gap:6,marginTop:3,alignItems:'center',flexWrap:'wrap'}}>
                           {l.gsLevel&&<span style={{fontSize:10,fontWeight:700,color:C.purple}}>{l.gsLevel}</span>}
                           {l.status&&<span style={{fontSize:10,fontWeight:600,color:C.gold}}>{l.status}</span>}
                           {isOwn&&<span style={{fontSize:10,fontWeight:700,color:C.blue,background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:3,padding:'0px 4px'}}>YOU</span>}
+                          {isAdmin&&!isOwn&&<span style={{fontSize:10,fontWeight:700,color:C.red,background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:3,padding:'0px 4px'}}>ADMIN</span>}
                           <span style={{fontSize:10,color:C.muted}}>{formatDate(l.createdAt)}</span>
                         </div>
                       </div>
-                      {isOwn&&(
-                        <div style={{display:'flex',gap:4,flexShrink:0}}>
-                          <button onClick={()=>setScreen('post')} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,cursor:'pointer',color:C.muted,padding:'4px 8px',fontSize:11,fontFamily:"'Inter',sans-serif"}}>Edit</button>
-                          <button onClick={()=>{if(window.confirm('Remove your listing?'))removeListing(l.id);}}
-                            style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4}}>
-                            <Trash2 size={13}/>
-                          </button>
-                        </div>
-                      )}
+                      <div style={{display:'flex',gap:4,flexShrink:0}}>
+                        {isOwn&&<button onClick={()=>setScreen('post')} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,cursor:'pointer',color:C.muted,padding:'4px 8px',fontSize:11,fontFamily:"'Inter',sans-serif"}}>Edit</button>}
+                        {canDelete&&<button onClick={()=>{if(window.confirm('Remove this listing?'))removeListing(l.id);}}
+                          style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4}}>
+                          <Trash2 size={13}/>
+                        </button>}
+                      </div>
                     </div>
                   );
                 })}
@@ -1133,7 +1183,7 @@ export default function App(){
                     {sortByPriority(chains.two).map((officers,i)=>{
                       const ck=getChainKey(officers);
                       return<MatchCard key={ck} officers={officers} type={2} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
-                        priorityRank={i+1} unreadMsgs={unreadChats[ck]||0}
+                        priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
                         onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
                         onOpenChat={()=>openChat(ck,officers)}/>;
                     })}
@@ -1145,7 +1195,7 @@ export default function App(){
                     {sortByPriority(chains.three).map((officers,i)=>{
                       const ck=getChainKey(officers);
                       return<MatchCard key={ck} officers={officers} type={3} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
-                        priorityRank={i+1} unreadMsgs={unreadChats[ck]||0}
+                        priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
                         onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
                         onOpenChat={()=>openChat(ck,officers)}/>;
                     })}
