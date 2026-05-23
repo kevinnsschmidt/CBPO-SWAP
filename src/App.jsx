@@ -715,8 +715,8 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
                     <span style={{fontSize:12,color:C.muted}}>←</span>
                   </div>
                 )}
-                {/* Chat button on far right for 2-way, below for 3-way */}
-                {isLast&&type===2&&(isParticipant||isAdmin)&&(
+                {/* Chat button on far right */}
+                {isLast&&(isParticipant||isAdmin)&&(
                   <div style={{paddingLeft:8,flexShrink:0}}>
                     <button onClick={onOpenChat}
                       style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:11,fontWeight:600,padding:'8px 10px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',flexDirection:'column',alignItems:'center',gap:4,whiteSpace:'nowrap'}}>
@@ -731,15 +731,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
             );
           })}
         </div>
-        {type===3&&(isParticipant||isAdmin)&&(
-          <div style={{padding:'0 12px 12px'}}>
-            <button onClick={onOpenChat}
-              style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:12,fontWeight:600,padding:'8px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-              <MessageSquare size={13}/>Open Match Chat
-              {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:10,fontWeight:700,marginLeft:4}}>{unreadMsgs}</span>}
-            </button>
-          </div>
-        )}
+
     </div>
   );
 }
@@ -1184,8 +1176,8 @@ export default function App(){
       const prevCount=last.lockCounts?.[ck]||0;
       const wasKnown=last.chainKeys?.includes(ck);
       const iAmInChain=officers.some(o=>o.id===myListing?.id); if(!wasKnown&&iAmInChain)newNotifItems.push({type:'match_found',title:'New match found!',body:`Your listing matched a ${officers.length}-way swap. Check the Matches tab.`});
-      if(wasKnown&&currCount>prevCount)newNotifItems.push({type:'lock_placed',title:'Match updated',body:`${currCount}/${officers.length} officers confirmed.`});
-      if(currCount===officers.length&&!last.allLockedKeys?.includes(ck))newNotifItems.push({type:'all_locked',title:'All parties confirmed! 🎉',body:'Everyone is ready. Open the match chat to coordinate.'});
+      if(wasKnown&&currCount>prevCount&&iAmInChain)newNotifItems.push({type:'lock_placed',title:'Match updated',body:`${currCount}/${officers.length} officers confirmed.`});
+      if(currCount===officers.length&&!last.allLockedKeys?.includes(ck)&&iAmInChain)newNotifItems.push({type:'all_locked',title:'All parties confirmed! 🎉',body:'Everyone is ready. Open the match chat to coordinate.'});
       const {data:msgs}=await supabase.from('messages').select('*').eq('chain_key',ck).order('created_at');
       if(msgs?.length){
         const prev=last.msgCounts?.[ck]||0;
@@ -1607,11 +1599,21 @@ export default function App(){
               <div style={{textAlign:'center',padding:60,color:C.muted}}>
                 <div style={{fontSize:36,marginBottom:10}}>🔗</div>
                 <div style={{fontWeight:600,fontSize:15,marginBottom:4,color:C.text}}>No matches yet</div>
-                <div style={{fontSize:13}}>Matches appear automatically when listings align</div>
+                <div style={{fontSize:13}}>{myListing?'We\'ll notify you when your listing gets a match':'Post your swap to get matched automatically'}</div>
+              </div>
+            ):sortByPriority([...chains.two,...chains.three]).filter(officers=>
+              isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
+            ).length===0?(
+              <div style={{textAlign:'center',padding:60,color:C.muted}}>
+                <div style={{fontSize:36,marginBottom:10}}>🔗</div>
+                <div style={{fontWeight:600,fontSize:15,marginBottom:4,color:C.text}}>No matches for your listing yet</div>
+                <div style={{fontSize:13}}>We'll notify you when a match is found</div>
               </div>
             ):(
               <>
-                {sortByPriority([...chains.two,...chains.three]).map((officers,i)=>{
+                {sortByPriority([...chains.two,...chains.three]).filter(officers=>
+              isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
+            ).map((officers,i)=>{
                   const ck=getChainKey(officers);
                   const type=officers.length;
                   return<MatchCard key={ck} officers={officers} type={type} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
