@@ -726,6 +726,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
           );
         })}
       </div>
+      {(isParticipant||isAdmin)&&(
       <div style={{padding:'0 14px 12px'}}>
         <button onClick={onOpenChat}
           style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:13,fontWeight:600,padding:'9px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
@@ -733,6 +734,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
           {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:11,fontWeight:700,marginLeft:4}}>{unreadMsgs} new</span>}
         </button>
       </div>
+      )}
     </div>
   );
 }
@@ -792,16 +794,10 @@ function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClos
             return(
               <div key={msg.id} className="slide-up" style={{display:'flex',flexDirection:'column',alignItems:isMe?'flex-end':'flex-start',marginTop:showName&&i>0?10:2}}>
                 {showName&&!isMe&&<div style={{fontSize:11,fontWeight:600,color:C.subtle,marginBottom:3,marginLeft:4}}>{isAdmin?msg.senderName:'Admin'}</div>}
-                <div style={{display:'flex',alignItems:'flex-end',gap:6,flexDirection:isMe?'row-reverse':'row'}}>
-                  <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                    background:isMe?C.greenDim:C.surface2,border:`1px solid ${isMe?C.greenBorder:C.border}`,
-                    fontSize:14,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>
-                    {msg.text}
-                  </div>
-                  {isAdmin&&<button onClick={()=>{if(window.confirm('Delete this message?'))onDeleteMessage(msg.id);}}
-                    style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:2,flexShrink:0,opacity:0.5}}>
-                    <Trash2 size={11}/>
-                  </button>}
+                <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
+                  background:isMe?C.greenDim:C.surface2,border:`1px solid ${isMe?C.greenBorder:C.border}`,
+                  fontSize:14,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>
+                  {msg.text}
                 </div>
                 {showTime&&<div style={{fontSize:10,color:C.muted,marginTop:3,marginLeft:isMe?0:4,marginRight:isMe?4:0}}>{formatMsgTime(msg.createdAt)}</div>}
               </div>
@@ -825,7 +821,7 @@ function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClos
 }
 
 // ── Support Inbox (admin only) ─────────────────────────────────────────────────
-function SupportInbox({threads,currentUser,onOpen,onClose}){
+function SupportInbox({threads,currentUser,onOpen,onClose,onDeleteThread}){
   const C=useC();
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
@@ -849,18 +845,23 @@ function SupportInbox({threads,currentUser,onOpen,onClose}){
           </div>
         ):(
           threads.map(t=>(
-            <div key={t.chainKey} onClick={()=>onOpen(t.chainKey,t.username)}
-              style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`,cursor:'pointer',display:'flex',alignItems:'center',gap:12,background:'transparent'}}>
-              <div style={{width:40,height:40,borderRadius:'50%',background:C.greenDim,border:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <User size={18} color={C.green}/>
+            <div key={t.chainKey} style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:12}}>
+              <div onClick={()=>onOpen(t.chainKey,t.username)} style={{display:'flex',alignItems:'center',gap:12,flex:1,cursor:'pointer',minWidth:0}}>
+                <div style={{width:40,height:40,borderRadius:'50%',background:C.greenDim,border:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <User size={18} color={C.green}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:14,color:C.text}}>{t.username}</div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.latest.text}</div>
+                </div>
+                <div style={{textAlign:'right',flexShrink:0}}>
+                  <div style={{fontSize:11,color:C.muted}}>{formatTime(t.latest.created_at)}</div>
+                </div>
               </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:600,fontSize:14,color:C.text}}>{t.username}</div>
-                <div style={{fontSize:12,color:C.muted,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.latest.text}</div>
-              </div>
-              <div style={{textAlign:'right',flexShrink:0}}>
-                <div style={{fontSize:11,color:C.muted}}>{formatTime(t.latest.created_at)}</div>
-              </div>
+              <button onClick={()=>{if(window.confirm(`Delete entire conversation with ${t.username}?`))onDeleteThread(t.chainKey);}}
+                style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4,flexShrink:0}}>
+                <Trash2 size={14}/>
+              </button>
             </div>
           ))
         )}
@@ -1240,6 +1241,11 @@ export default function App(){
   }
 
   async function openChat(chainKey,officers){
+    const isParticipant=myListing&&officers.some(o=>o.id===myListing.id);
+    if(!isParticipant&&!isAdmin){
+      alert('This chat is private between matched officers only.');
+      return;
+    }
     setChatSession({chainKey,officers});setChatLoading(true);
     const {data}=await supabase.from('messages').select('*').eq('chain_key',chainKey).order('created_at');
     const msgs=(data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}));
@@ -1329,6 +1335,11 @@ export default function App(){
   async function deleteSupportMessage(msgId){
     await supabase.from('messages').delete().eq('id',msgId);
     setSupportMessages(prev=>prev.filter(m=>m.id!==msgId));
+  }
+
+  async function deleteSupportThread(chainKey){
+    await supabase.from('messages').delete().eq('chain_key',chainKey);
+    setSupportThreads(prev=>prev.filter(t=>t.chainKey!==chainKey));
   }
 
   function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
@@ -1422,7 +1433,7 @@ export default function App(){
   // ── Render: support inbox (admin) ──
   if(supportInbox) return(
     <ThemeCtx.Provider value={C}>
-      <SupportInbox threads={supportThreads} currentUser={user} onOpen={(ck,un)=>{setSupportInbox(false);openSupportChat(ck,un);}} onClose={()=>setSupportInbox(false)}/>
+      <SupportInbox threads={supportThreads} currentUser={user} onOpen={(ck,un)=>{setSupportInbox(false);openSupportChat(ck,un);}} onClose={()=>setSupportInbox(false)} onDeleteThread={deleteSupportThread}/>
     </ThemeCtx.Provider>
   );
 
@@ -1574,30 +1585,14 @@ export default function App(){
               </div>
             ):(
               <>
-                {chains.two.length>0&&(
-                  <>
-                    <div style={{fontSize:11,fontWeight:700,color:C.gold,textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Direct 2-Way — {chains.two.length}</div>
-                    {sortByPriority(chains.two).map((officers,i)=>{
-                      const ck=getChainKey(officers);
-                      return<MatchCard key={ck} officers={officers} type={2} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
-                        priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
-                        onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
-                        onOpenChat={()=>openChat(ck,officers)}/>;
-                    })}
-                  </>
-                )}
-                {chains.three.length>0&&(
-                  <div style={{marginTop:chains.two.length>0?18:0}}>
-                    <div style={{fontSize:11,fontWeight:700,color:C.green,textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>3-Way Chain — {chains.three.length}</div>
-                    {sortByPriority(chains.three).map((officers,i)=>{
-                      const ck=getChainKey(officers);
-                      return<MatchCard key={ck} officers={officers} type={3} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
-                        priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
-                        onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
-                        onOpenChat={()=>openChat(ck,officers)}/>;
-                    })}
-                  </div>
-                )}
+                {sortByPriority([...chains.two,...chains.three]).map((officers,i)=>{
+                  const ck=getChainKey(officers);
+                  const type=officers.length;
+                  return<MatchCard key={ck} officers={officers} type={type} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
+                    priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
+                    onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
+                    onOpenChat={()=>openChat(ck,officers)}/>;
+                })}
               </>
             )}
           </div>
