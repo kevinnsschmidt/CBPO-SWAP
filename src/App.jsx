@@ -738,7 +738,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
 }
 
 // ── Support Chat ──────────────────────────────────────────────────────────────
-function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose}){
+function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose,onDeleteMessage}){
   const C=useC();
   const [text,setText]=useState('');
   const [sending,setSending]=useState(false);
@@ -792,10 +792,16 @@ function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClos
             return(
               <div key={msg.id} className="slide-up" style={{display:'flex',flexDirection:'column',alignItems:isMe?'flex-end':'flex-start',marginTop:showName&&i>0?10:2}}>
                 {showName&&!isMe&&<div style={{fontSize:11,fontWeight:600,color:C.subtle,marginBottom:3,marginLeft:4}}>{isAdmin?msg.senderName:'Admin'}</div>}
-                <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                  background:isMe?C.greenDim:C.surface2,border:`1px solid ${isMe?C.greenBorder:C.border}`,
-                  fontSize:14,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>
-                  {msg.text}
+                <div style={{display:'flex',alignItems:'flex-end',gap:6,flexDirection:isMe?'row-reverse':'row'}}>
+                  <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
+                    background:isMe?C.greenDim:C.surface2,border:`1px solid ${isMe?C.greenBorder:C.border}`,
+                    fontSize:14,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>
+                    {msg.text}
+                  </div>
+                  {isAdmin&&<button onClick={()=>{if(window.confirm('Delete this message?'))onDeleteMessage(msg.id);}}
+                    style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:2,flexShrink:0,opacity:0.5}}>
+                    <Trash2 size={11}/>
+                  </button>}
                 </div>
                 {showTime&&<div style={{fontSize:10,color:C.muted,marginTop:3,marginLeft:isMe?0:4,marginRight:isMe?4:0}}>{formatMsgTime(msg.createdAt)}</div>}
               </div>
@@ -1320,6 +1326,11 @@ export default function App(){
     }
   }
 
+  async function deleteSupportMessage(msgId){
+    await supabase.from('messages').delete().eq('id',msgId);
+    setSupportMessages(prev=>prev.filter(m=>m.id!==msgId));
+  }
+
   function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
   function handleLogout(){setUser(null);localStorage.removeItem('cbpo-user');setListings([]);setLocks({});setNotifs([]);setSettingsPanel(false);}
   function toggleDark(){const nd=!dark;setDark(nd);localStorage.setItem('cbpo-dark',String(nd));}
@@ -1403,7 +1414,8 @@ export default function App(){
   if(supportSession) return(
     <ThemeCtx.Provider value={C}>
       <SupportChat session={supportSession} messages={supportMessages} loading={supportLoading}
-        currentUser={user} isAdmin={isAdmin} onSend={sendSupportMessage} onClose={closeSupportChat}/>
+        currentUser={user} isAdmin={isAdmin} onSend={sendSupportMessage} onClose={closeSupportChat}
+        onDeleteMessage={deleteSupportMessage}/>
     </ThemeCtx.Provider>
   );
 
