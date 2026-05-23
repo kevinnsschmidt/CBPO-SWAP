@@ -785,26 +785,6 @@ export default function App(){
             <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Officer R. Smith or initials" style={inp}/>
           </div>
           <div style={{marginBottom:16}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
-            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
-              style={{...inp,cursor:'pointer',appearance:'none'}}>
-              <option value=''>Select GS level...</option>
-              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>     
-          <div style={{marginBottom:16}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
-            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
-              style={{...inp,cursor:'pointer',appearance:'none'}}>
-              <option value=''>Select GS level...</option>
-              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{marginBottom:16}}>
             <Dropdown label="Current Duty Station *" value={form.currentPort} options={PORTS} placeholder="Select your current port..."
               onSelect={p=>setForm(f=>({...f,currentPort:p,desiredPorts:f.desiredPorts.filter(d=>d!==p)}))}/>
           </div>
