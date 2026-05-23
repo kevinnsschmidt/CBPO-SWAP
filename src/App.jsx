@@ -633,8 +633,8 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
   const rankColor=priorityRank===1?C.green:priorityRank===2?C.gold:C.muted;
   const rankBorder=priorityRank===1?C.greenBorder:priorityRank===2?C.goldBorder:C.border;
 
-  // For 3-way, show stacked cards instead of horizontal
-  const isHorizontal=type===2;
+  // Both 2-way and 3-way use horizontal layout
+  const isHorizontal=true;
 
   return(
     <div className="fade-in" style={{background:allLocked?C.greenDim:C.surface,border:`1px solid ${allLocked?C.greenBorder:isMyMatch?C.blueBorder:C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
@@ -664,9 +664,8 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
         </div>
       )}
 
-      {/* Officers — horizontal for 2-way, stacked for 3-way */}
-      {isHorizontal?(
-        <div style={{display:'flex',alignItems:'stretch',padding:'12px'}}>
+      {/* Officers — horizontal layout */}
+      <div style={{display:'flex',alignItems:'stretch',padding:'12px',overflowX:type===3?'auto':'visible',gap:type===3?4:0}}>
           {lockState.map(({officer,lock,active},i)=>{
             const countdown=active?formatCountdown(lock.expiresAt):null;
             const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
@@ -675,7 +674,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
             return(
               <div key={officer.id} style={{display:'flex',alignItems:'center',flex:1}}>
                 {/* Officer card */}
-                <div style={{flex:1,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
+                <div style={{flex:1,minWidth:type===3?140:0,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:4}}>
                     <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0}}/>
                     <span style={{fontSize:13,fontWeight:700,color:C.red}}>{officer.currentPort.split(',')[0]}</span>
@@ -716,8 +715,8 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
                     <span style={{fontSize:12,color:C.muted}}>←</span>
                   </div>
                 )}
-                {/* Chat button on far right for 2-way */}
-                {isLast&&(isParticipant||isAdmin)&&(
+                {/* Chat button on far right for 2-way, below for 3-way */}
+                {isLast&&type===2&&(isParticipant||isAdmin)&&(
                   <div style={{paddingLeft:8,flexShrink:0}}>
                     <button onClick={onOpenChat}
                       style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:11,fontWeight:600,padding:'8px 10px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',flexDirection:'column',alignItems:'center',gap:4,whiteSpace:'nowrap'}}>
@@ -732,69 +731,18 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
             );
           })}
         </div>
-      ):(
-        /* 3-way: stacked layout */
-        <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:6}}>
-          {lockState.map(({officer,lock,active},i)=>{
-            const countdown=active?formatCountdown(lock.expiresAt):null;
-            const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
-            const isMyRow=currentUser&&officer.userId===currentUser.id;
-            return(
-              <div key={officer.id}>
-                <div style={{background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
-                    <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0}}/>
-                      <div>
-                        <div style={{display:'flex',alignItems:'center',gap:5}}>
-                          <span style={{fontSize:13,fontWeight:700,color:C.red}}>{officer.currentPort.split(',')[0]}</span>
-                          <ArrowRight size={10} color={C.muted}/>
-                          <span style={{fontSize:12,color:C.green}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
-                        </div>
-                        <div style={{fontSize:10,color:C.muted,marginTop:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
-                        {(isParticipant||isAdmin)&&<div style={{fontSize:10,color:C.subtle}}>📬 {officer.contact}</div>}
-                      </div>
-                    </div>
-                    <div style={{display:'flex',gap:3,flexShrink:0}}>
-                      {officer.gsLevel&&<span style={{fontSize:9,fontWeight:700,color:C.purple}}>{officer.gsLevel}</span>}
-                      {officer.status&&<span style={{fontSize:9,fontWeight:700,color:C.gold}}>{officer.status}</span>}
-                    </div>
-                  </div>
-                  {active?(
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:4}}>
-                        <Lock size={9} color={soonExpire?C.gold:C.green}/>
-                        <span style={{fontSize:10,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
-                      </div>
-                      {isMyRow&&<button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
-                        style={{background:'none',border:`1px solid ${C.border}`,borderRadius:4,color:C.muted,fontSize:10,padding:'2px 7px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Release</button>}
-                    </div>
-                  ):isMyRow?(
-                    <button onClick={()=>{if(window.confirm('Lock in? Hold expires in 48 hours.'))onLock(officer.id);}}
-                      style={{width:'100%',marginTop:4,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,color:C.green,fontSize:10,fontWeight:600,padding:'5px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
-                      <Lock size={9}/>Lock In
-                    </button>
-                  ):(
-                    <div style={{marginTop:4,fontSize:10,color:C.muted}}>Awaiting confirmation…</div>
-                  )}
-                </div>
-                {i<officers.length-1&&<div style={{display:'flex',justifyContent:'center',padding:'2px 0'}}><ArrowRight size={11} color={C.muted}/></div>}
-              </div>
-            );
-          })}
-          {(isParticipant||isAdmin)&&(
+        {type===3&&(isParticipant||isAdmin)&&(
+          <div style={{padding:'0 12px 12px'}}>
             <button onClick={onOpenChat}
-              style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:12,fontWeight:600,padding:'8px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:4}}>
+              style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:12,fontWeight:600,padding:'8px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
               <MessageSquare size={13}/>Open Match Chat
               {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:10,fontWeight:700,marginLeft:4}}>{unreadMsgs}</span>}
             </button>
-          )}
-        </div>
-      )}
+          </div>
+        )}
     </div>
   );
 }
-
 
 // ── Support Chat ──────────────────────────────────────────────────────────────
 function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose,onDeleteMessage}){
