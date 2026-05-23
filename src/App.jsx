@@ -3,7 +3,6 @@ import { Search, ArrowRight, Trash2, Check, ChevronDown, Shield, RefreshCw,
          X, Link2, Lock, Bell, ChevronLeft, Send, MessageSquare } from 'lucide-react';
 import { supabase } from './supabase';
 
-// ── Constants ──────────────────────────────────────────────────────────────────
 const PORTS = [
   'Anchorage, AK','Atlanta, GA','Baltimore/Washington, MD','Boston, MA',
   'Brownsville, TX','Buffalo, NY','Calais, ME','Calexico, CA',
@@ -21,7 +20,6 @@ const PORTS = [
 const LOCK_MS = 48 * 60 * 60 * 1000;
 const POLL_MS = 60 * 1000;
 
-// ── Colors ────────────────────────────────────────────────────────────────────
 const C = {
   bg:'#080d16', surface:'#0f1623', surface2:'#162030', border:'#1c2b3a',
   green:'#10b981', greenDim:'rgba(16,185,129,0.10)', greenBorder:'rgba(16,185,129,0.28)',
@@ -36,9 +34,9 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600&display=swap');
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{overscroll-behavior:none;}
-  body{margin:0;background:${C.bg};}
+  body{margin:0;background:#080d16;}
   ::-webkit-scrollbar{width:3px;}
-  ::-webkit-scrollbar-thumb{background:${C.border};border-radius:2px;}
+  ::-webkit-scrollbar-thumb{background:#1c2b3a;border-radius:2px;}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -52,66 +50,60 @@ const css = `
   .row-hover:hover{background:rgba(255,255,255,0.03)}
   .btn-lock{transition:background 0.15s;}
   .btn-lock:hover{background:rgba(16,185,129,0.18)!important;}
-  .btn-release:hover{background:rgba(248,113,113,0.1)!important;border-color:rgba(248,113,113,0.3)!important;color:${C.red}!important;}
+  .btn-release:hover{background:rgba(248,113,113,0.1)!important;border-color:rgba(248,113,113,0.3)!important;}
   .all-locked-pulse{animation:pulse 2s ease-in-out infinite;}
   .bell-ring{animation:bellRing 0.5s ease;}
   .chat-btn:hover{background:rgba(96,165,250,0.18)!important;}
-  input,textarea{font-family:'Inter',sans-serif;color:${C.text};}
-  input::placeholder,textarea::placeholder{color:${C.muted};}
-  input:focus,textarea:focus{outline:none;border-color:${C.green}!important;}
-  .msg-input:focus{border-color:${C.blue}!important;}
-  /* Safe area for iPhone notch / home bar */
+  input,textarea,select{font-family:'Inter',sans-serif;color:#dde4ee;}
+  input::placeholder,textarea::placeholder{color:#4a6080;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:#10b981!important;}
+  .msg-input:focus{border-color:#60a5fa!important;}
   .safe-top{padding-top:env(safe-area-inset-top);}
   .safe-bottom{padding-bottom:env(safe-area-inset-bottom);}
 `;
 
 const inp = {
-  width:'100%', background:C.surface2, border:`1px solid ${C.border}`,
-  borderRadius:8, color:C.text, padding:'10px 14px', fontSize:14,
+  width:'100%', background:'#162030', border:'1px solid #1c2b3a',
+  borderRadius:8, color:'#dde4ee', padding:'10px 14px', fontSize:14,
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const uuid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const formatDate = iso => new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const formatMsgTime = iso => new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
 
 function formatTime(iso){
-  const ms = Date.now() - new Date(iso).getTime();
+  const ms=Date.now()-new Date(iso).getTime();
   if(ms<60000) return 'just now';
   if(ms<3600000) return `${Math.floor(ms/60000)}m ago`;
   if(ms<86400000) return `${Math.floor(ms/3600000)}h ago`;
   return formatDate(iso);
 }
 function formatCountdown(expiresAt){
-  const ms = new Date(expiresAt).getTime() - Date.now();
+  const ms=new Date(expiresAt).getTime()-Date.now();
   if(ms<=0) return null;
-  const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000);
-  return h>=24 ? `${Math.floor(h/24)}d ${h%24}h left` : `${h}h ${m}m left`;
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+  return h>=24?`${Math.floor(h/24)}d ${h%24}h left`:`${h}h ${m}m left`;
 }
 const getChainKey = officers => officers.map(o=>o.id).sort().join('|');
 
-// Row from DB → app shape
 function dbToListing(row){
   return {
-    id: row.id, name: row.name, currentPort: row.current_port,
-    desiredPorts: row.desired_ports, contact: row.contact,
-    notes: row.notes||'', gsLevel: row.gs_level||'', createdAt: row.created_at,
+    id:row.id, name:row.name, currentPort:row.current_port,
+    desiredPorts:row.desired_ports, contact:row.contact,
+    notes:row.notes||'', gsLevel:row.gs_level||'', createdAt:row.created_at,
   };
 }
 function dbToLocks(rows){
-  const locks = {};
-  const now = Date.now();
+  const locks={},now=Date.now();
   for(const r of rows){
-    if(new Date(r.expires_at).getTime() <= now) continue;
+    if(new Date(r.expires_at).getTime()<=now) continue;
     if(!locks[r.chain_key]) locks[r.chain_key]={};
-    locks[r.chain_key][r.officer_id]={lockedAt:r.locked_at, expiresAt:r.expires_at};
+    locks[r.chain_key][r.officer_id]={lockedAt:r.locked_at,expiresAt:r.expires_at};
   }
   return locks;
 }
-
-// Chain detection
 function computeChains(ls){
-  const two=[], threeKeys=new Set(), three=[];
+  const two=[],threeKeys=new Set(),three=[];
   for(let i=0;i<ls.length;i++)
     for(let j=i+1;j<ls.length;j++){
       const [a,b]=[ls[i],ls[j]];
@@ -140,22 +132,19 @@ function computeQueuePositions(listings){
   }
   return pos;
 }
-const sortByPriority = arr => [...arr].sort((a,b)=>Math.min(...a.map(o=>new Date(o.createdAt)))-Math.min(...b.map(o=>new Date(o.createdAt))));
-
-function fireNativeNotif(title, body){
-  if('Notification' in window && Notification.permission==='granted')
-    try{ new Notification(`CBPO Swap Board: ${title}`,{body}); }catch(e){}
+const sortByPriority=arr=>[...arr].sort((a,b)=>Math.min(...a.map(o=>new Date(o.createdAt)))-Math.min(...b.map(o=>new Date(o.createdAt))));
+function fireNativeNotif(title,body){
+  if('Notification' in window&&Notification.permission==='granted')
+    try{new Notification(`CBPO Swap Board: ${title}`,{body});}catch(e){}
 }
-
 const NOTIF_META={
   match_found:{icon:'🔗',color:C.gold},
-  lock_placed: {icon:'🔒',color:C.blue},
-  all_locked:  {icon:'✅',color:C.green},
+  lock_placed:{icon:'🔒',color:C.blue},
+  all_locked:{icon:'✅',color:C.green},
   lock_expired:{icon:'⏰',color:C.muted},
-  new_message: {icon:'💬',color:C.purple},
+  new_message:{icon:'💬',color:C.purple},
 };
 
-// ── Small UI components ───────────────────────────────────────────────────────
 function PortTag({label,onRemove}){
   return(
     <span style={{display:'inline-flex',alignItems:'center',gap:4,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,padding:'2px 8px',fontSize:12,color:C.green}}>
@@ -213,17 +202,14 @@ function Dropdown({label,value,options,onSelect,placeholder,multi=false,selected
   );
 }
 
-// ── Chat Panel ────────────────────────────────────────────────────────────────
 function ChatPanel({chainKey,officers,messages,loading,myListing,onSend,onClose}){
   const [text,setText]=useState('');
   const [sending,setSending]=useState(false);
   const bottomRef=useRef();
   const inputRef=useRef();
   const isParticipant=myListing&&officers.some(o=>o.id===myListing.id);
-
-  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}); },[messages]);
-  useEffect(()=>{ inputRef.current?.focus(); },[]);
-
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:'smooth'});},[messages]);
+  useEffect(()=>{inputRef.current?.focus();},[]);
   async function handleSend(){
     if(!text.trim()||sending||!isParticipant) return;
     setSending(true);
@@ -231,7 +217,6 @@ function ChatPanel({chainKey,officers,messages,loading,myListing,onSend,onClose}
     setText('');
     setSending(false);
   }
-
   return(
     <div style={{position:'fixed',inset:0,zIndex:600,display:'flex',flexDirection:'column',background:C.bg}}>
       <style>{css}</style>
@@ -296,7 +281,6 @@ function ChatPanel({chainKey,officers,messages,loading,myListing,onSend,onClose}
   );
 }
 
-// ── Notification Panel ────────────────────────────────────────────────────────
 function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequestPerm,myListing,listings,onSetMyListing}){
   const unread=notifs.filter(n=>!n.read).length;
   return(
@@ -330,7 +314,7 @@ function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequest
           <div style={{textAlign:'center',padding:'40px 20px',color:C.muted}}>
             <div style={{fontSize:32,marginBottom:10}}>🔔</div>
             <div style={{fontWeight:600,marginBottom:4}}>No notifications yet</div>
-            <div style={{fontSize:13}}>{myListing?'We\'ll alert you on matches, locks, and messages':'Select your listing above'}</div>
+            <div style={{fontSize:13}}>{myListing?"We'll alert you on matches, locks, and messages":'Select your listing above'}</div>
           </div>
         ):(
           notifs.map(n=>{
@@ -355,7 +339,6 @@ function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequest
   );
 }
 
-// ── Chain Card ────────────────────────────────────────────────────────────────
 function ChainCard({officers,type,chainLocks={},onLock,onUnlock,myListingId,priorityRank,unreadMsgs=0,onOpenChat}){
   const now=Date.now();
   const lockState=officers.map(o=>{
@@ -369,7 +352,6 @@ function ChainCard({officers,type,chainLocks={},onLock,onUnlock,myListingId,prio
   const rankColor=priorityRank===1?C.green:priorityRank===2?C.gold:C.muted;
   const rankBg=priorityRank===1?C.greenDim:priorityRank===2?C.goldDim:'rgba(255,255,255,0.04)';
   const rankBorder=priorityRank===1?C.greenBorder:priorityRank===2?C.goldBorder:'rgba(255,255,255,0.08)';
-
   return(
     <div className="card fade-in" style={{background:allLocked?'rgba(16,185,129,0.04)':C.surface,border:`1px solid ${allLocked?C.green:isMyChain?'rgba(96,165,250,0.3)':type===3?'#1e3a28':C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
       <div style={{padding:'12px 14px 10px',borderBottom:`1px solid ${allLocked?'rgba(16,185,129,0.15)':C.border}`}}>
@@ -391,7 +373,7 @@ function ChainCard({officers,type,chainLocks={},onLock,onUnlock,myListingId,prio
         <LockProgress locked={lockedCount} total={officers.length}/>
       </div>
       {allLocked&&(
-        <div style={{padding:'10px 14px',background:'rgba(16,185,129,0.08)',borderBottom:`1px solid rgba(16,185,129,0.15)`,display:'flex',alignItems:'center',gap:10}}>
+        <div style={{padding:'10px 14px',background:'rgba(16,185,129,0.08)',borderBottom:'1px solid rgba(16,185,129,0.15)',display:'flex',alignItems:'center',gap:10}}>
           <span className="all-locked-pulse" style={{fontSize:20}}>✅</span>
           <div>
             <div style={{fontSize:13,fontWeight:700,color:C.green}}>All parties locked in</div>
@@ -454,75 +436,49 @@ function ChainCard({officers,type,chainLocks={},onLock,onUnlock,myListingId,prio
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
 export default function App(){
-  const [tab,setTab]               = useState('browse');
-  const [listings,setListings]     = useState([]);
-  const [locks,setLocks]           = useState({});
-  const [chains,setChains]         = useState({two:[],three:[]});
-  const [queuePos,setQueuePos]     = useState({});
-  const [loading,setLoading]       = useState(true);
-  const [filter,setFilter]         = useState('');
-  const [form,setForm]             = useState({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:''});
-  const [postStatus,setPostStatus] = useState(null);
+  const [tab,setTab]=useState('browse');
+  const [listings,setListings]=useState([]);
+  const [locks,setLocks]=useState({});
+  const [chains,setChains]=useState({two:[],three:[]});
+  const [queuePos,setQueuePos]=useState({});
+  const [loading,setLoading]=useState(true);
+  const [filter,setFilter]=useState('');
+  const [form,setForm]=useState({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:''});
+  const [postStatus,setPostStatus]=useState(null);
+  const [myListing,setMyListing]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-my-listing'));}catch{return null;}});
+  const [notifs,setNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-notifs'))||[];}catch{return [];}});
+  const [notifPerm,setNotifPerm]=useState('default');
+  const [notifPanel,setNotifPanel]=useState(false);
+  const [bellRing,setBellRing]=useState(false);
+  const lastRef=useRef({chainKeys:[],lockCounts:{},allLockedKeys:[],msgCounts:{}});
+  const [chatSession,setChatSession]=useState(null);
+  const [chatMessages,setChatMessages]=useState([]);
+  const [chatLoading,setChatLoading]=useState(false);
+  const [unreadChats,setUnreadChats]=useState({});
+  const realtimeRef=useRef(null);
 
-  // Personal (stored in localStorage, not shared)
-  const [myListing,setMyListing]   = useState(()=>{ try{ return JSON.parse(localStorage.getItem('cbpo-my-listing')); }catch{return null;} });
-  const [notifs,setNotifs]         = useState(()=>{ try{ return JSON.parse(localStorage.getItem('cbpo-notifs'))||[]; }catch{return [];} });
-  const [notifPerm,setNotifPerm]   = useState('default');
-  const [notifPanel,setNotifPanel] = useState(false);
-  const [bellRing,setBellRing]     = useState(false);
-  const lastRef                    = useRef({chainKeys:[],lockCounts:{},allLockedKeys:[],msgCounts:{}});
-
-  // Chat
-  const [chatSession,setChatSession]   = useState(null);
-  const [chatMessages,setChatMessages] = useState([]);
-  const [chatLoading,setChatLoading]   = useState(false);
-  const [unreadChats,setUnreadChats]   = useState({});
-  const realtimeRef                    = useRef(null);
-
-  // ── Load ────────────────────────────────────────────────────
-  useEffect(()=>{ init(); if('Notification' in window) setNotifPerm(Notification.permission); },[]);
-
+  useEffect(()=>{init();if('Notification' in window)setNotifPerm(Notification.permission);},[]);
   useEffect(()=>{
     const c=computeChains(listings);
     setChains(c);
     setQueuePos(computeQueuePositions(listings));
-    if(myListing) checkUnread([...c.two,...c.three], myListing.id);
+    if(myListing)checkUnread([...c.two,...c.three],myListing.id);
   },[listings]);
-
-  // Poll every 60s
+  useEffect(()=>{const id=setInterval(poll,POLL_MS);return()=>clearInterval(id);},[myListing,listings,locks,notifs]);
   useEffect(()=>{
-    const id=setInterval(poll, POLL_MS);
-    return()=>clearInterval(id);
-  },[myListing, listings, locks, notifs]);
-
-  // Realtime listings + locks
-  useEffect(()=>{
-    const ch = supabase.channel('board')
+    const ch=supabase.channel('board')
       .on('postgres_changes',{event:'*',schema:'public',table:'listings'},()=>fetchListings())
       .on('postgres_changes',{event:'*',schema:'public',table:'locks'},()=>fetchLocks())
       .subscribe();
     return()=>supabase.removeChannel(ch);
   },[]);
 
-  async function init(){
-    setLoading(true);
-    await Promise.all([fetchListings(), fetchLocks()]);
-    setLoading(false);
-  }
+  async function init(){setLoading(true);await Promise.all([fetchListings(),fetchLocks()]);setLoading(false);}
+  async function fetchListings(){const {data}=await supabase.from('listings').select('*').order('created_at');setListings((data||[]).map(dbToListing));}
+  async function fetchLocks(){const {data}=await supabase.from('locks').select('*').gt('expires_at',new Date().toISOString());setLocks(dbToLocks(data||[]));}
 
-  async function fetchListings(){
-    const {data}=await supabase.from('listings').select('*').order('created_at');
-    setListings((data||[]).map(dbToListing));
-  }
-
-  async function fetchLocks(){
-    const {data}=await supabase.from('locks').select('*').gt('expires_at',new Date().toISOString());
-    setLocks(dbToLocks(data||[]));
-  }
-
-  async function checkUnread(allChains, myId){
+  async function checkUnread(allChains,myId){
     const myChains=allChains.filter(officers=>officers.some(o=>o.id===myId));
     const newUnread={};
     for(const officers of myChains){
@@ -532,37 +488,31 @@ export default function App(){
       const {data:receipt}=await supabase.from('read_receipts').select('read_at').eq('chain_key',ck).eq('user_id',myId).maybeSingle();
       const lastRead=receipt?.read_at;
       const count=msgs.filter(m=>m.sender_id!==myId&&(!lastRead||new Date(m.created_at)>new Date(lastRead))).length;
-      if(count>0) newUnread[ck]=count;
+      if(count>0)newUnread[ck]=count;
     }
     setUnreadChats(prev=>({...prev,...newUnread}));
   }
 
   async function poll(){
-    if(!myListing) return;
+    if(!myListing)return;
     const {data:listData}=await supabase.from('listings').select('*').order('created_at');
     const ls=(listData||[]).map(dbToListing);
     const {data:lockData}=await supabase.from('locks').select('*').gt('expires_at',new Date().toISOString());
     const lk=dbToLocks(lockData||[]);
-
     const newChains=computeChains(ls);
-    const now=Date.now();
-    const myId=myListing.id;
+    const now=Date.now(),myId=myListing.id;
     const myChains=[...newChains.two,...newChains.three].filter(o=>o.some(x=>x.id===myId));
     const last=lastRef.current;
     const newNotifItems=[];
-
     for(const officers of myChains){
       const ck=getChainKey(officers);
       const currActive=Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now);
       const currCount=currActive.length;
       const prevCount=last.lockCounts?.[ck]||0;
       const wasKnown=last.chainKeys?.includes(ck);
-
-      if(!wasKnown) newNotifItems.push({type:'match_found',title:'New swap match found!',body:`Your listing is part of a ${officers.length}-way chain. Check the Chains tab.`});
-      if(wasKnown&&currCount>prevCount) newNotifItems.push({type:'lock_placed',title:'Lock placed on your chain',body:`${currCount}/${officers.length} officers ready.`});
-      if(currCount===officers.length&&!last.allLockedKeys?.includes(ck)) newNotifItems.push({type:'all_locked',title:'All parties locked in! 🎉',body:'Everyone is ready. Use chain chat to coordinate, then start HR.'});
-
-      // Chat
+      if(!wasKnown)newNotifItems.push({type:'match_found',title:'New swap match found!',body:`Your listing is part of a ${officers.length}-way chain. Check the Chains tab.`});
+      if(wasKnown&&currCount>prevCount)newNotifItems.push({type:'lock_placed',title:'Lock placed on your chain',body:`${currCount}/${officers.length} officers ready.`});
+      if(currCount===officers.length&&!last.allLockedKeys?.includes(ck))newNotifItems.push({type:'all_locked',title:'All parties locked in! 🎉',body:'Everyone is ready. Use chain chat to coordinate, then start HR.'});
       const {data:msgs}=await supabase.from('messages').select('*').eq('chain_key',ck).order('created_at');
       if(msgs?.length){
         const prev=last.msgCounts?.[ck]||0;
@@ -570,24 +520,21 @@ export default function App(){
           const latest=msgs[msgs.length-1];
           if(latest.sender_id!==myId){
             newNotifItems.push({type:'new_message',title:'New message in your chain',body:`${latest.sender_name}: ${latest.text.slice(0,80)}${latest.text.length>80?'…':''}`});
-            if(!chatSession||chatSession.chainKey!==ck)
-              setUnreadChats(prev=>({...prev,[ck]:(prev[ck]||0)+msgs.length-prev}));
+            if(!chatSession||chatSession.chainKey!==ck)setUnreadChats(prev=>({...prev,[ck]:(prev[ck]||0)+msgs.length-prev}));
           }
         }
-        if(!last.msgCounts) last.msgCounts={};
+        if(!last.msgCounts)last.msgCounts={};
         last.msgCounts[ck]=msgs.length;
       }
     }
-
     if(newNotifItems.length>0){
       const stamped=newNotifItems.map(n=>({...n,id:uuid(),createdAt:new Date().toISOString(),read:false}));
       const updated=[...stamped,...notifs];
       setNotifs(updated);
       localStorage.setItem('cbpo-notifs',JSON.stringify(updated));
-      setBellRing(true); setTimeout(()=>setBellRing(false),600);
-      for(const n of stamped) fireNativeNotif(n.title,n.body);
+      setBellRing(true);setTimeout(()=>setBellRing(false),600);
+      for(const n of stamped)fireNativeNotif(n.title,n.body);
     }
-
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
       lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
@@ -596,10 +543,8 @@ export default function App(){
     };
   }
 
-  // ── Chat ────────────────────────────────────────────────────
   async function openChat(chainKey,officers){
-    setChatSession({chainKey,officers});
-    setChatLoading(true);
+    setChatSession({chainKey,officers});setChatLoading(true);
     const {data}=await supabase.from('messages').select('*').eq('chain_key',chainKey).order('created_at');
     setChatMessages((data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at})));
     setChatLoading(false);
@@ -607,33 +552,22 @@ export default function App(){
       await supabase.from('read_receipts').upsert({chain_key:chainKey,user_id:myListing.id,read_at:new Date().toISOString()});
       setUnreadChats(prev=>({...prev,[chainKey]:0}));
     }
-    // Realtime for this chat room
-    if(realtimeRef.current) supabase.removeChannel(realtimeRef.current);
-    realtimeRef.current = supabase.channel(`chat-${chainKey}`)
+    if(realtimeRef.current)supabase.removeChannel(realtimeRef.current);
+    realtimeRef.current=supabase.channel(`chat-${chainKey}`)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chain_key=eq.${chainKey}`},payload=>{
         const r=payload.new;
         setChatMessages(prev=>[...prev,{id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}]);
-      })
-      .subscribe();
+      }).subscribe();
   }
-
-  function closeChat(){
-    if(realtimeRef.current){ supabase.removeChannel(realtimeRef.current); realtimeRef.current=null; }
-    setChatSession(null);
-  }
-
+  function closeChat(){if(realtimeRef.current){supabase.removeChannel(realtimeRef.current);realtimeRef.current=null;}setChatSession(null);}
   async function sendMessage(text){
-    if(!myListing||!chatSession) return;
+    if(!myListing||!chatSession)return;
     const msg={id:uuid(),chain_key:chatSession.chainKey,sender_id:myListing.id,sender_name:myListing.name,text,created_at:new Date().toISOString()};
     await supabase.from('messages').insert([msg]);
-    // Realtime will add it to state; also mark read
     await supabase.from('read_receipts').upsert({chain_key:chatSession.chainKey,user_id:myListing.id,read_at:new Date().toISOString()});
   }
-
-  // ── Locks ───────────────────────────────────────────────────
   async function lockOfficer(chainKey,officerId){
-    const now=new Date();
-    const expires=new Date(now.getTime()+LOCK_MS);
+    const now=new Date(),expires=new Date(now.getTime()+LOCK_MS);
     await supabase.from('locks').upsert({chain_key:chainKey,officer_id:officerId,locked_at:now.toISOString(),expires_at:expires.toISOString()});
     await fetchLocks();
   }
@@ -641,31 +575,24 @@ export default function App(){
     await supabase.from('locks').delete().eq('chain_key',chainKey).eq('officer_id',officerId);
     await fetchLocks();
   }
-
-  // ── Listings ────────────────────────────────────────────────
   async function submitListing(){
     if(!form.name.trim()||!form.currentPort||!form.desiredPorts.length||!form.contact.trim()){
-      setPostStatus('error'); setTimeout(()=>setPostStatus(null),2500); return;
+      setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;
     }
     setPostStatus('saving');
     const row={id:uuid(),name:form.name.trim(),current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel};
     const {error}=await supabase.from('listings').insert([row]);
-    if(error){ console.error('Supabase error:', error.message); alert('Error: ' + error.message); setPostStatus('error'); setTimeout(()=>setPostStatus(null),2500); return; }
-    setForm({name:'',currentPort:'',desiredPorts:[],contact:'',notes:''});
+    if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
+    setForm({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:''});
     setPostStatus('saved');
     setTimeout(()=>{setPostStatus(null);setTab('browse');},1600);
   }
-  async function removeListing(id){
-    await supabase.from('listings').delete().eq('id',id);
-  }
+  async function removeListing(id){await supabase.from('listings').delete().eq('id',id);}
+  function handleSetMyListing(l){setMyListing(l);localStorage.setItem('cbpo-my-listing',JSON.stringify(l));}
+  async function requestNotifPermission(){if('Notification' in window){const p=await Notification.requestPermission();setNotifPerm(p);}}
+  function markAllRead(){const u=notifs.map(n=>({...n,read:true}));setNotifs(u);localStorage.setItem('cbpo-notifs',JSON.stringify(u));}
+  function clearAllNotifs(){setNotifs([]);localStorage.setItem('cbpo-notifs',JSON.stringify([]));}
 
-  // ── My listing / notifs (localStorage) ──────────────────────
-  function handleSetMyListing(l){ setMyListing(l); localStorage.setItem('cbpo-my-listing',JSON.stringify(l)); }
-  async function requestNotifPermission(){ if('Notification' in window){ const p=await Notification.requestPermission(); setNotifPerm(p); } }
-  function markAllRead(){ const u=notifs.map(n=>({...n,read:true})); setNotifs(u); localStorage.setItem('cbpo-notifs',JSON.stringify(u)); }
-  function clearAllNotifs(){ setNotifs([]); localStorage.setItem('cbpo-notifs',JSON.stringify([])); }
-
-  // ── Derived ──────────────────────────────────────────────────
   const filtered=filter.trim()
     ?listings.filter(l=>l.name.toLowerCase().includes(filter.toLowerCase())||l.currentPort.toLowerCase().includes(filter.toLowerCase())||l.desiredPorts.some(p=>p.toLowerCase().includes(filter.toLowerCase())))
     :listings;
@@ -674,26 +601,14 @@ export default function App(){
   const totalUnreadChat=Object.values(unreadChats).reduce((a,b)=>a+b,0);
   const tabs=[{id:'browse',label:`Board (${listings.length})`},{id:'post',label:'+ Post'},{id:'chains',label:`Chains${totalChains?` (${totalChains})`:''}`}];
 
-  // ── Screens ──────────────────────────────────────────────────
-  if(chatSession) return(
-    <ChatPanel chainKey={chatSession.chainKey} officers={chatSession.officers} messages={chatMessages}
-      loading={chatLoading} myListing={myListing} onSend={sendMessage} onClose={closeChat}/>
-  );
-  if(notifPanel) return(
-    <NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs}
-      notifPerm={notifPerm} onRequestPerm={requestNotifPermission}
-      myListing={myListing} listings={listings} onSetMyListing={handleSetMyListing}/>
-  );
+  if(chatSession)return(<ChatPanel chainKey={chatSession.chainKey} officers={chatSession.officers} messages={chatMessages} loading={chatLoading} myListing={myListing} onSend={sendMessage} onClose={closeChat}/>);
+  if(notifPanel)return(<NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs} notifPerm={notifPerm} onRequestPerm={requestNotifPermission} myListing={myListing} listings={listings} onSetMyListing={handleSetMyListing}/>);
 
   return(
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text}}>
       <style>{css}</style>
-
-      {/* Header */}
       <div className="safe-top" style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,position:'sticky',top:0,zIndex:100}}>
-        <div style={{background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:8,padding:'7px',display:'flex'}}>
-          <Shield size={17} color={C.green}/>
-        </div>
+        <div style={{background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:8,padding:'7px',display:'flex'}}><Shield size={17} color={C.green}/></div>
         <div>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:19,fontWeight:800,letterSpacing:'0.06em',lineHeight:1}}>CBPO SWAP BOARD</div>
           <div style={{fontSize:11,color:C.muted,marginTop:1}}>Duty Station Exchange Network</div>
@@ -707,8 +622,6 @@ export default function App(){
           </button>
         </div>
       </div>
-
-      {/* Tabs */}
       <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,display:'flex'}}>
         {tabs.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} className="tab"
@@ -718,7 +631,6 @@ export default function App(){
         ))}
       </div>
 
-      {/* BROWSE */}
       {tab==='browse'&&(
         <div style={{padding:16}}>
           <div style={{position:'relative',marginBottom:14}}>
@@ -741,6 +653,7 @@ export default function App(){
                     <div style={{fontWeight:600,fontSize:15,display:'flex',alignItems:'center',gap:7}}>
                       {l.name}
                       {l.id===myListing?.id&&<span style={{fontSize:10,fontWeight:700,color:C.blue,background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:3,padding:'1px 5px'}}>YOU</span>}
+                      {l.gsLevel&&<span style={{fontSize:10,fontWeight:700,color:C.purple,background:C.purpleDim,border:`1px solid ${C.purpleBorder}`,borderRadius:3,padding:'1px 5px'}}>{l.gsLevel}</span>}
                     </div>
                     <div style={{fontSize:11,color:C.muted,marginTop:2}}>{formatDate(l.createdAt)}</div>
                   </div>
@@ -774,7 +687,6 @@ export default function App(){
         </div>
       )}
 
-      {/* POST */}
       {tab==='post'&&(
         <div style={{padding:16}}>
           <div style={{background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'10px 14px',marginBottom:18,fontSize:12,color:'#fcd34d',lineHeight:1.5}}>
@@ -784,16 +696,6 @@ export default function App(){
             <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Name / Identifier *</label>
             <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Officer R. Smith or initials" style={inp}/>
           </div>
-          <div style={{marginBottom:16}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
-            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
-              style={{...inp,cursor:'pointer',appearance:'none'}}>
-              <option value=''>Select GS level...</option>
-              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>     
           <div style={{marginBottom:16}}>
             <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
             <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
@@ -823,39 +725,8 @@ export default function App(){
             <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Contact *</label>
             <input value={form.contact} onChange={e=>setForm(f=>({...f,contact:e.target.value}))} placeholder="Email, Teams handle, or phone" style={inp}/>
           </div>
-          <div style={{marginBottom:16}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
-            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
-              style={{...inp,cursor:'pointer',appearance:'none'}}>
-              <option value=''>Select GS level...</option>
-              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-
-<div style={{marginBottom:16}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
-            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
-              style={{...inp,cursor:'pointer',appearance:'none'}}>
-              <option value=''>Select GS level...</option>
-              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{marginBottom:16}}>
-            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
-            <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
-              style={{...inp,cursor:'pointer',appearance:'none'}}>
-              <option value=''>Select GS level...</option>
-              {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>
           <div style={{marginBottom:22}}>
             <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Notes (Optional)</label>
-
             <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="e.g. Flexible on timing, open to 3-way…" rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}/>
           </div>
           <button onClick={submitListing} disabled={postStatus==='saving'||postStatus==='saved'}
@@ -866,7 +737,6 @@ export default function App(){
         </div>
       )}
 
-      {/* CHAINS */}
       {tab==='chains'&&(
         <div style={{padding:16}}>
           {!myListing&&(
