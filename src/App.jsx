@@ -665,7 +665,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
       )}
 
       {/* Officers — horizontal layout */}
-      <div style={{display:'flex',alignItems:'stretch',padding:'12px',overflowX:type===3?'auto':'visible',gap:type===3?4:0}}>
+      <div style={{display:'flex',alignItems:'stretch',padding:'12px',overflowX:type===3?'auto':'visible',gap:8}}>
           {lockState.map(({officer,lock,active},i)=>{
             const countdown=active?formatCountdown(lock.expiresAt):null;
             const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
@@ -674,12 +674,16 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
             return(
               <div key={officer.id} style={{display:'flex',alignItems:'center',flex:1}}>
                 {/* Officer card */}
-                <div style={{flex:1,minWidth:type===3?140:0,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
-                  <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:4}}>
-                    <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0}}/>
-                    <span style={{fontSize:13,fontWeight:700,color:C.red}}>{officer.currentPort.split(',')[0]}</span>
-                    <ArrowRight size={10} color={C.muted}/>
-                    <span style={{fontSize:12,color:C.green}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
+                <div style={{flex:1,minWidth:0,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:4,flexWrap:'wrap'}}>
+                    <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0,marginTop:3}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:700,color:C.red,lineHeight:1.3}}>{officer.currentPort.split(',')[0]}</div>
+                      <div style={{display:'flex',alignItems:'center',gap:3,marginTop:2}}>
+                        <ArrowRight size={9} color={C.muted}/>
+                        <span style={{fontSize:11,color:C.green,lineHeight:1.3}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
+                      </div>
+                    </div>
                   </div>
                   <div style={{fontSize:10,color:C.muted,marginBottom:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
                   {(isParticipant||isAdmin)&&<div style={{fontSize:10,color:C.subtle}}>📬 {officer.contact}</div>}
@@ -715,18 +719,7 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
                     <span style={{fontSize:12,color:C.muted}}>←</span>
                   </div>
                 )}
-                {/* Chat button on far right */}
-                {isLast&&(isParticipant||isAdmin)&&(
-                  <div style={{paddingLeft:8,flexShrink:0}}>
-                    <button onClick={onOpenChat}
-                      style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:11,fontWeight:600,padding:'8px 10px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',flexDirection:'column',alignItems:'center',gap:4,whiteSpace:'nowrap'}}>
-                      <MessageSquare size={14}/>
-                      <span>Open Match</span>
-                      <span>Chat</span>
-                      {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 6px',fontSize:10,fontWeight:700}}>{unreadMsgs}</span>}
-                    </button>
-                  </div>
-                )}
+
               </div>
             );
           })}
