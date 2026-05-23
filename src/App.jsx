@@ -64,7 +64,7 @@ const css = `
 
 const inp = {
   width:'100%', background:'#162030', border:'1px solid #1c2b3a',
-  borderRadius:8, color:'#dde4ee', padding:'10px 14px', fontSize:14,
+  borderRadius:8, color:'#dde4ee', padding:'10px 14px', fontSize:16,
 };
 
 const uuid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
