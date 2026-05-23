@@ -359,6 +359,24 @@ function AuthScreen({onAuth}){
             {mode==='login'?'Register here':'Log in here'}
           </button>
         </div>
+        {mode==='login'&&(
+          <div style={{textAlign:'center',marginTop:10,fontSize:12}}>
+            <button onClick={()=>setMode('forgot')}
+              style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:12,padding:0,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>
+              Forgot password?
+            </button>
+          </div>
+        )}
+        {mode==='forgot'&&(
+          <div style={{marginTop:12,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'10px 14px',fontSize:12,color:C.gold,lineHeight:1.5}}>
+            Contact the admin to reset your password. Go to Settings → Contact Admin after logging in, or reach out directly.
+            <div style={{marginTop:8}}>
+              <button onClick={()=>setMode('login')} style={{background:'none',border:'none',color:C.gold,cursor:'pointer',fontSize:12,fontWeight:600,padding:0,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>
+                Back to login
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div style={{marginTop:20,fontSize:11,color:C.muted,textAlign:'center'}}>
         Unofficial peer tool — not affiliated with CBP
@@ -845,6 +863,104 @@ function SupportInbox({threads,currentUser,onOpen,onClose}){
   );
 }
 
+// ── Admin Panel (user management) ────────────────────────────────────────────
+function AdminPanel({onClose,currentUser}){
+  const C=useC();
+  const [users,setUsers]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [resetUser,setResetUser]=useState(null);
+  const [tempPass,setTempPass]=useState('');
+  const [resetDone,setResetDone]=useState(false);
+
+  useEffect(()=>{ loadUsers(); },[]);
+
+  async function loadUsers(){
+    setLoading(true);
+    const {data}=await supabase.from('users').select('id,username,created_at').order('created_at',{ascending:false});
+    setUsers((data||[]).filter(u=>u.username!==currentUser.username));
+    setLoading(false);
+  }
+
+  async function deleteUser(u){
+    if(!window.confirm(`Delete account for ${u.username}? This also removes their listing.`)) return;
+    await supabase.from('listings').delete().eq('user_id',u.id);
+    await supabase.from('users').delete().eq('id',u.id);
+    setUsers(prev=>prev.filter(x=>x.id!==u.id));
+  }
+
+  async function resetPassword(u){
+    const temp='cbpo'+Math.floor(1000+Math.random()*9000);
+    const hash=await hashPassword(u.username,temp);
+    await supabase.from('users').update({password_hash:hash}).eq('id',u.id);
+    setTempPass(temp);
+    setResetDone(true);
+  }
+
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:'var(--bg)',fontFamily:"'Inter',sans-serif"}}>
+      <ThemeCtx.Consumer>{C=>(
+        <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
+          <style>{css}</style>
+          <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+            <div style={{height:'env(safe-area-inset-top)',background:C.surface}}/>
+            <div style={{padding:'12px 18px',display:'flex',alignItems:'center',gap:12}}>
+              <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4,display:'flex',alignItems:'center'}}>
+                <ChevronLeft size={20} color={C.muted}/>
+              </button>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,letterSpacing:'0.05em',color:C.text}}>USER MANAGEMENT</span>
+              <span style={{fontSize:11,color:C.muted}}>{users.length} users</span>
+            </div>
+          </div>
+          {resetDone&&(
+            <div style={{margin:16,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:10,padding:14}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:6}}>✓ Password Reset</div>
+              <div style={{fontSize:13,color:C.text}}>Temp password: <strong style={{fontFamily:'monospace',fontSize:15}}>{tempPass}</strong></div>
+              <div style={{fontSize:12,color:C.muted,marginTop:4}}>Share this with the user. They should change it after logging in.</div>
+              <button onClick={()=>{setResetDone(false);setResetUser(null);setTempPass('');}}
+                style={{marginTop:10,background:'none',border:`1px solid ${C.border}`,borderRadius:6,color:C.muted,fontSize:12,padding:'5px 12px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                Done
+              </button>
+            </div>
+          )}
+          <div style={{flex:1,overflowY:'auto'}}>
+            {loading?(
+              <div style={{textAlign:'center',padding:60,color:C.muted}}><RefreshCw size={18} style={{animation:'spin 0.8s linear infinite'}}/></div>
+            ):users.length===0?(
+              <div style={{textAlign:'center',padding:60,color:C.muted}}>
+                <div style={{fontSize:32,marginBottom:10}}>👥</div>
+                <div style={{fontWeight:600,color:C.text,marginBottom:4}}>No users yet</div>
+                <div style={{fontSize:13}}>Registered users will appear here</div>
+              </div>
+            ):(
+              users.map(u=>(
+                <div key={u.id} style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:12}}>
+                  <div style={{width:36,height:36,borderRadius:'50%',background:C.surface2,border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <User size={16} color={C.muted}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:14,color:C.text}}>{u.username}</div>
+                    <div style={{fontSize:11,color:C.muted,marginTop:2}}>Joined {formatDate(u.created_at)}</div>
+                  </div>
+                  <div style={{display:'flex',gap:6,flexShrink:0}}>
+                    <button onClick={()=>{setResetUser(u);setResetDone(false);resetPassword(u);}}
+                      style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:6,color:C.blue,fontSize:11,fontWeight:600,padding:'5px 10px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                      Reset PW
+                    </button>
+                    <button onClick={()=>deleteUser(u)}
+                      style={{background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:6,color:C.red,fontSize:11,fontWeight:600,padding:'5px 10px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}</ThemeCtx.Consumer>
+    </div>
+  );
+}
+
 // ── Post Form ─────────────────────────────────────────────────────────────────
 function PostForm({currentUser,onPosted,onCancel}){
   const C=useC();
@@ -961,6 +1077,7 @@ export default function App(){
   const [supportMessages,setSupportMessages]=useState([]);
   const [supportLoading,setSupportLoading]=useState(false);
   const [supportInbox,setSupportInbox]=useState(false);
+  const [adminPanel,setAdminPanel]=useState(false);
   const [supportThreads,setSupportThreads]=useState([]); // admin inbox
   const [unreadSupport,setUnreadSupport]=useState(0);
   const supportRealtimeRef=useRef(null);
@@ -1048,7 +1165,7 @@ export default function App(){
       const {data:msgs}=await supabase.from('messages').select('*').eq('chain_key',ck).order('created_at');
       if(msgs?.length){
         const prev=last.msgCounts?.[ck]||0;
-        if(msgs.length>prev){
+        if(msgs.length>prev&&prev>0){
           const latest=msgs[msgs.length-1];
           if(latest.sender_id!==myId&&(!chatSession||chatSession.chainKey!==ck)){
             newNotifItems.push({type:'new_message',title:'New message in your match',body:`${latest.sender_name}: ${latest.text.slice(0,80)}${latest.text.length>80?'…':''}`,chainKey:ck});
@@ -1117,8 +1234,12 @@ export default function App(){
   async function openChat(chainKey,officers){
     setChatSession({chainKey,officers});setChatLoading(true);
     const {data}=await supabase.from('messages').select('*').eq('chain_key',chainKey).order('created_at');
-    setChatMessages((data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at})));
+    const msgs=(data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}));
+    setChatMessages(msgs);
     setChatLoading(false);
+    // Set known count so poll doesn't re-notify
+    if(!lastRef.current.msgCounts) lastRef.current.msgCounts={};
+    lastRef.current.msgCounts[chainKey]=data?.length||0;
     if(myListing){
       await supabase.from('read_receipts').upsert({chain_key:chainKey,user_id:myListing.id,read_at:new Date().toISOString()});
       setUnreadChats(prev=>({...prev,[chainKey]:0}));
@@ -1249,6 +1370,13 @@ export default function App(){
       <NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs}
         notifPerm={notifPerm} onRequestPerm={requestNotifPermission}
         onOpenChat={ck=>{setNotifPanel(false);setPendingChat(ck);}}/>
+    </ThemeCtx.Provider>
+  );
+
+  // ── Render: admin panel ──
+  if(adminPanel) return(
+    <ThemeCtx.Provider value={C}>
+      <AdminPanel onClose={()=>setAdminPanel(false)} currentUser={user}/>
     </ThemeCtx.Provider>
   );
 
