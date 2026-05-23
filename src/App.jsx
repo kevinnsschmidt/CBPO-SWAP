@@ -117,9 +117,27 @@ function computeQueuePositions(listings){
   return pos;
 }
 const sortByPriority=arr=>[...arr].sort((a,b)=>Math.min(...a.map(o=>new Date(o.createdAt)))-Math.min(...b.map(o=>new Date(o.createdAt))));
-function fireNativeNotif(title,body){
-  if('Notification' in window&&Notification.permission==='granted')
-    try{new Notification(`CBPO Swap Board: ${title}`,{body});}catch(e){}
+function fireNativeNotif(title, body, onClick){
+  if('Notification' in window&&Notification.permission==='granted'){
+    try{
+      const n=new Notification(`CBPO Swap Board: ${title}`,{body});
+      if(onClick) n.onclick=()=>{window.focus();onClick();};
+    }catch(e){}
+  }
+}
+
+function playMessageSound(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+0.1);
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.3);
+  }catch(e){}
 }
 const NOTIF_META={
   match_found:{icon:'🔗',color:'gold'},
@@ -377,7 +395,7 @@ function SettingsPanel({user,onClose,dark,onToggleDark,onLogout}){
 }
 
 // ── Notification Panel ────────────────────────────────────────────────────────
-function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequestPerm}){
+function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequestPerm,onOpenChat}){
   const C=useC();
   const unread=notifs.filter(n=>!n.read).length;
   return(
@@ -415,7 +433,8 @@ function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequest
             const meta=NOTIF_META[n.type]||{icon:'📋',color:'muted'};
             const color=C[meta.color]||C.muted;
             return(
-              <div key={n.id} style={{background:n.read?C.surface:C.greenDim,border:`1px solid ${n.read?C.border:C.greenBorder}`,borderRadius:9,padding:'12px 14px',marginBottom:8,display:'flex',gap:12,alignItems:'flex-start'}}>
+              <div key={n.id} onClick={()=>{if(n.chainKey){onClose();onOpenChat(n.chainKey);}}}
+                style={{background:n.read?C.surface:C.greenDim,border:`1px solid ${n.read?C.border:C.greenBorder}`,borderRadius:9,padding:'12px 14px',marginBottom:8,display:'flex',gap:12,alignItems:'flex-start',cursor:n.chainKey?'pointer':'default'}}>
                 <span style={{fontSize:20,flexShrink:0}}>{meta.icon}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
@@ -756,9 +775,18 @@ export default function App(){
   const [chatMessages,setChatMessages]=useState([]);
   const [chatLoading,setChatLoading]=useState(false);
   const [unreadChats,setUnreadChats]=useState({});
+  const [pendingChat,setPendingChat]=useState(null);
   const realtimeRef=useRef(null);
 
   const myListing=listings.find(l=>l.userId===user?.id)||null;
+
+  // Auto-open chat if tapped from notification
+  useEffect(()=>{
+    if(pendingChat&&listings.length>0){
+      const officers=[...chains.two,...chains.three].find(ofs=>getChainKey(ofs)===pendingChat);
+      if(officers){openChat(pendingChat,officers);setPendingChat(null);}
+    }
+  },[pendingChat,listings,chains]);
 
   useEffect(()=>{
     if(user){init();if('Notification' in window)setNotifPerm(Notification.permission);}
@@ -835,7 +863,7 @@ export default function App(){
         if(msgs.length>prev){
           const latest=msgs[msgs.length-1];
           if(latest.sender_id!==myId){
-            newNotifItems.push({type:'new_message',title:'New message in your match',body:`${latest.sender_name}: ${latest.text.slice(0,80)}${latest.text.length>80?'…':''}`});
+            newNotifItems.push({type:'new_message',title:'New message in your match',body:`${latest.sender_name}: ${latest.text.slice(0,80)}${latest.text.length>80?'…':''}`,chainKey:ck});
             if(!chatSession||chatSession.chainKey!==ck)setUnreadChats(prev=>({...prev,[ck]:(prev[ck]||0)+msgs.length-prev}));
           }
         }
@@ -849,7 +877,11 @@ export default function App(){
       setNotifs(updated);
       localStorage.setItem('cbpo-notifs',JSON.stringify(updated));
       setBellRing(true);setTimeout(()=>setBellRing(false),600);
-      for(const n of stamped)fireNativeNotif(n.title,n.body);
+      for(const n of stamped){
+        const onClick=n.chainKey?()=>setPendingChat(n.chainKey):null;
+        if(n.type==='new_message') playMessageSound();
+        fireNativeNotif(n.title,n.body,onClick);
+      }
     }
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
@@ -958,7 +990,8 @@ export default function App(){
   if(notifPanel) return(
     <ThemeCtx.Provider value={C}>
       <NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs}
-        notifPerm={notifPerm} onRequestPerm={requestNotifPermission}/>
+        notifPerm={notifPerm} onRequestPerm={requestNotifPermission}
+        onOpenChat={ck=>{setNotifPanel(false);setPendingChat(ck);}}/>
     </ThemeCtx.Provider>
   );
 
