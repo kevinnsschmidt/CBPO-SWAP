@@ -1367,7 +1367,9 @@ export default function App(){
     ?listings.filter(l=>l.currentPort.toLowerCase().includes(filter.toLowerCase())||l.desiredPorts.some(p=>p.toLowerCase().includes(filter.toLowerCase()))||(l.gsLevel&&l.gsLevel.toLowerCase().includes(filter.toLowerCase()))||(l.status&&l.status.toLowerCase().includes(filter.toLowerCase())))
     :listings;
 
-  const totalMatches=chains.two.length+chains.three.length;
+  const totalMatches=isAdmin
+    ?chains.two.length+chains.three.length
+    :[...chains.two,...chains.three].filter(officers=>myListing&&officers.some(o=>o.id===myListing.id)).length;
   const unreadCount=notifs.filter(n=>!n.read).length;
   const totalUnreadChat=Object.values(unreadChats).reduce((a,b)=>a+b,0);
 
