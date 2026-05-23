@@ -395,7 +395,7 @@ function WelcomeScreen({user,onPost,onBrowse}){
 }
 
 // ── Settings Panel ────────────────────────────────────────────────────────────
-function SettingsPanel({user,onClose,dark,onToggleDark,onLogout}){
+function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin}){
   const C=useC();
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
@@ -429,6 +429,11 @@ function SettingsPanel({user,onClose,dark,onToggleDark,onLogout}){
             <div style={{position:'absolute',top:3,left:dark?21:3,width:20,height:20,borderRadius:'50%',background:'white',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
           </button>
         </div>
+        <button onClick={onContactAdmin}
+          style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:10,padding:'14px',display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:"'Inter',sans-serif",marginBottom:12}}>
+          <MessageSquare size={16} color={C.blue}/>
+          <span style={{fontSize:14,fontWeight:600,color:C.blue}}>Contact Admin</span>
+        </button>
         <button onClick={onLogout}
           style={{width:'100%',background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:10,padding:'14px',display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
           <LogOut size={16} color={C.red}/>
@@ -712,6 +717,132 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
   );
 }
 
+// ── Support Chat ──────────────────────────────────────────────────────────────
+function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose}){
+  const C=useC();
+  const [text,setText]=useState('');
+  const [sending,setSending]=useState(false);
+  const bottomRef=useRef();
+  const inputRef=useRef();
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:'smooth'});},[messages]);
+  useEffect(()=>{inputRef.current?.focus();},[]);
+
+  async function handleSend(){
+    if(!text.trim()||sending) return;
+    setSending(true);
+    await onSend(text.trim());
+    setText('');
+    setSending(false);
+  }
+
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:600,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
+      <style>{css}</style>
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+        <div style={{height:'env(safe-area-inset-top)',background:C.surface}}/>
+        <div style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:10}}>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4,display:'flex',alignItems:'center'}}>
+            <ChevronLeft size={20} color={C.muted}/>
+          </button>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:'0.05em',color:C.text}}>
+              {isAdmin?`💬 ${session.username}`:'💬 Contact Admin'}
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginTop:1}}>
+              {isAdmin?'Support conversation':'Direct message to admin'}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:16,display:'flex',flexDirection:'column',gap:2}}>
+        {loading?(
+          <div style={{textAlign:'center',padding:40,color:C.muted}}><RefreshCw size={18} style={{animation:'spin 0.8s linear infinite'}}/></div>
+        ):messages.length===0?(
+          <div style={{textAlign:'center',padding:40,color:C.muted}}>
+            <div style={{fontSize:28,marginBottom:8}}>💬</div>
+            <div style={{fontWeight:600,marginBottom:4,color:C.text}}>{isAdmin?'No messages yet':'Contact Admin'}</div>
+            <div style={{fontSize:12}}>{isAdmin?'This user has not sent any messages yet':'Send a message and the admin will reply as soon as possible'}</div>
+          </div>
+        ):(
+          messages.map((msg,i)=>{
+            const isMe=currentUser&&msg.senderId===currentUser.id;
+            const showName=i===0||messages[i-1].senderId!==msg.senderId;
+            const showTime=i===messages.length-1||messages[i+1].senderId!==msg.senderId;
+            return(
+              <div key={msg.id} className="slide-up" style={{display:'flex',flexDirection:'column',alignItems:isMe?'flex-end':'flex-start',marginTop:showName&&i>0?10:2}}>
+                {showName&&!isMe&&<div style={{fontSize:11,fontWeight:600,color:C.subtle,marginBottom:3,marginLeft:4}}>{isAdmin?msg.senderName:'Admin'}</div>}
+                <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
+                  background:isMe?C.greenDim:C.surface2,border:`1px solid ${isMe?C.greenBorder:C.border}`,
+                  fontSize:14,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>
+                  {msg.text}
+                </div>
+                {showTime&&<div style={{fontSize:10,color:C.muted,marginTop:3,marginLeft:isMe?0:4,marginRight:isMe?4:0}}>{formatMsgTime(msg.createdAt)}</div>}
+              </div>
+            );
+          })
+        )}
+        <div ref={bottomRef}/>
+      </div>
+      <div style={{padding:'10px 12px',borderTop:`1px solid ${C.border}`,background:C.surface,display:'flex',gap:8,alignItems:'flex-end',flexShrink:0,paddingBottom:'max(10px,env(safe-area-inset-bottom))'}}>
+        <textarea ref={inputRef} value={text} onChange={e=>setText(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend();}}}
+          placeholder={isAdmin?`Reply to ${session.username}…`:'Type your message… (Enter to send)'} rows={1}
+          style={{...inp(C),resize:'none',padding:'10px 13px',lineHeight:1.5,flex:1,maxHeight:100,overflowY:'auto'}}/>
+        <button onClick={handleSend} disabled={!text.trim()||sending}
+          style={{background:text.trim()?C.green:'rgba(100,100,100,0.2)',border:'none',borderRadius:10,color:'#fff',padding:'10px 14px',cursor:text.trim()?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}>
+          <Send size={16}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Support Inbox (admin only) ─────────────────────────────────────────────────
+function SupportInbox({threads,currentUser,onOpen,onClose}){
+  const C=useC();
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
+      <style>{css}</style>
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+        <div style={{height:'env(safe-area-inset-top)',background:C.surface}}/>
+        <div style={{padding:'12px 18px',display:'flex',alignItems:'center',gap:12}}>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4,display:'flex',alignItems:'center'}}>
+            <ChevronLeft size={20} color={C.muted}/>
+          </button>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,letterSpacing:'0.05em',color:C.text}}>SUPPORT INBOX</span>
+          <span style={{fontSize:11,color:C.muted,marginLeft:4}}>{threads.length} conversation{threads.length!==1?'s':''}</span>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto'}}>
+        {threads.length===0?(
+          <div style={{textAlign:'center',padding:60,color:C.muted}}>
+            <div style={{fontSize:36,marginBottom:10}}>📭</div>
+            <div style={{fontWeight:600,fontSize:15,color:C.text,marginBottom:4}}>No support messages</div>
+            <div style={{fontSize:13}}>User messages will appear here</div>
+          </div>
+        ):(
+          threads.map(t=>(
+            <div key={t.chainKey} onClick={()=>onOpen(t.chainKey,t.username)}
+              style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`,cursor:'pointer',display:'flex',alignItems:'center',gap:12,background:'transparent'}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:C.greenDim,border:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <User size={18} color={C.green}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:600,fontSize:14,color:C.text}}>{t.username}</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.latest.text}</div>
+              </div>
+              <div style={{textAlign:'right',flexShrink:0}}>
+                <div style={{fontSize:11,color:C.muted}}>{formatTime(t.latest.created_at)}</div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Post Form ─────────────────────────────────────────────────────────────────
 function PostForm({currentUser,onPosted,onCancel}){
   const C=useC();
@@ -814,7 +945,7 @@ export default function App(){
   const [notifPanel,setNotifPanel]=useState(false);
   const [settingsPanel,setSettingsPanel]=useState(false);
   const [bellRing,setBellRing]=useState(false);
-  const lastRef=useRef({chainKeys:[],lockCounts:{},allLockedKeys:[],msgCounts:{}});
+  const lastRef=useRef({chainKeys:[],lockCounts:{},allLockedKeys:[],msgCounts:{},supportMsgCount:0});
 
   const [chatSession,setChatSession]=useState(null);
   const [chatMessages,setChatMessages]=useState([]);
@@ -822,6 +953,15 @@ export default function App(){
   const [unreadChats,setUnreadChats]=useState({});
   const [pendingChat,setPendingChat]=useState(null);
   const realtimeRef=useRef(null);
+
+  // Support chat state
+  const [supportSession,setSupportSession]=useState(null); // {chainKey, username}
+  const [supportMessages,setSupportMessages]=useState([]);
+  const [supportLoading,setSupportLoading]=useState(false);
+  const [supportInbox,setSupportInbox]=useState(false);
+  const [supportThreads,setSupportThreads]=useState([]); // admin inbox
+  const [unreadSupport,setUnreadSupport]=useState(0);
+  const supportRealtimeRef=useRef(null);
 
   const myListing=listings.find(l=>l.userId===user?.id)||null;
   const isAdmin=user?.username===ADMIN;
@@ -929,6 +1069,41 @@ export default function App(){
         fireNativeNotif(n.title,n.body,onClick);
       }
     }
+    // Check support messages
+    if(isAdmin){
+      const {data:supportMsgs}=await supabase.from('messages').select('chain_key,sender_id,sender_name,text,created_at').like('chain_key','support-%').order('created_at',{ascending:false});
+      if(supportMsgs?.length){
+        const threads={};
+        for(const m of supportMsgs){
+          if(!threads[m.chain_key]) threads[m.chain_key]={chainKey:m.chain_key,username:m.sender_name,latest:m,unread:0};
+        }
+        setSupportThreads(Object.values(threads));
+        const {data:receipts}=await supabase.from('read_receipts').select('chain_key,read_at').eq('user_id','admin-'+user.id);
+        let totalUnread=0;
+        for(const t of Object.values(threads)){
+          const receipt=receipts?.find(r=>r.chain_key===t.chainKey);
+          if(!receipt||new Date(t.latest.created_at)>new Date(receipt.read_at)) totalUnread++;
+        }
+        setUnreadSupport(totalUnread);
+      }
+    } else {
+      // Check if admin replied to my support chat
+      const mySupportKey='support-'+user.id;
+      const {data:supportMsgs}=await supabase.from('messages').select('*').eq('chain_key',mySupportKey).order('created_at',{ascending:false}).limit(1);
+      if(supportMsgs?.length){
+        const latest=supportMsgs[0];
+        const lastSupportCount=lastRef.current.supportMsgCount||0;
+        if(latest.sender_id!==user.id){
+          const {data:allMsgs}=await supabase.from('messages').select('id').eq('chain_key',mySupportKey);
+          if((allMsgs?.length||0)>lastSupportCount&&lastSupportCount>0){
+            newNotifItems.push({type:'new_message',title:'Admin replied to your message',body:latest.text.slice(0,80)});
+            playMessageSound();
+          }
+          lastRef.current.supportMsgCount=allMsgs?.length||0;
+        }
+      }
+    }
+
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
       lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
@@ -970,6 +1145,44 @@ export default function App(){
     await fetchLocks();
   }
   async function removeListing(id){await supabase.from('listings').delete().eq('id',id);}
+
+  async function openSupportChat(chainKey, username){
+    setSupportSession({chainKey, username});
+    setSupportLoading(true);
+    const {data}=await supabase.from('messages').select('*').eq('chain_key',chainKey).order('created_at');
+    setSupportMessages((data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at})));
+    setSupportLoading(false);
+    // Mark as read
+    const readerId=isAdmin?'admin-'+user.id:user.id;
+    await supabase.from('read_receipts').upsert({chain_key:chainKey,user_id:readerId,read_at:new Date().toISOString()});
+    if(isAdmin) setUnreadSupport(prev=>Math.max(0,prev-1));
+    // Realtime
+    if(supportRealtimeRef.current) supabase.removeChannel(supportRealtimeRef.current);
+    supportRealtimeRef.current=supabase.channel('support-'+chainKey)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chain_key=eq.${chainKey}`},payload=>{
+        const r=payload.new;
+        setSupportMessages(prev=>[...prev,{id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}]);
+      }).subscribe();
+  }
+
+  function closeSupportChat(){
+    if(supportRealtimeRef.current){supabase.removeChannel(supportRealtimeRef.current);supportRealtimeRef.current=null;}
+    setSupportSession(null);
+  }
+
+  async function sendSupportMessage(text){
+    if(!user||!supportSession||!text.trim()) return;
+    const msg={id:uuid(),chain_key:supportSession.chainKey,sender_id:user.id,sender_name:user.username,text,created_at:new Date().toISOString()};
+    await supabase.from('messages').insert([msg]);
+    const readerId=isAdmin?'admin-'+user.id:user.id;
+    await supabase.from('read_receipts').upsert({chain_key:supportSession.chainKey,user_id:readerId,read_at:new Date().toISOString()});
+    // Notify the other party
+    if(isAdmin){
+      fireNativeNotif('Admin replied','Your support message got a response — tap to view',null);
+    } else {
+      fireNativeNotif('New support message',`${user.username}: ${text.slice(0,60)}`,null);
+    }
+  }
 
   function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
   function handleLogout(){setUser(null);localStorage.removeItem('cbpo-user');setListings([]);setLocks({});setNotifs([]);setSettingsPanel(false);}
@@ -1030,7 +1243,8 @@ export default function App(){
   );
   if(settingsPanel) return(
     <ThemeCtx.Provider value={C}>
-      <SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout}/>
+      <SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout}
+        onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}}/>
     </ThemeCtx.Provider>
   );
   if(notifPanel) return(
@@ -1038,6 +1252,21 @@ export default function App(){
       <NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs}
         notifPerm={notifPerm} onRequestPerm={requestNotifPermission}
         onOpenChat={ck=>{setNotifPanel(false);setPendingChat(ck);}}/>
+    </ThemeCtx.Provider>
+  );
+
+  // ── Render: support chat ──
+  if(supportSession) return(
+    <ThemeCtx.Provider value={C}>
+      <SupportChat session={supportSession} messages={supportMessages} loading={supportLoading}
+        currentUser={user} isAdmin={isAdmin} onSend={sendSupportMessage} onClose={closeSupportChat}/>
+    </ThemeCtx.Provider>
+  );
+
+  // ── Render: support inbox (admin) ──
+  if(supportInbox) return(
+    <ThemeCtx.Provider value={C}>
+      <SupportInbox threads={supportThreads} currentUser={user} onOpen={(ck,un)=>{setSupportInbox(false);openSupportChat(ck,un);}} onClose={()=>setSupportInbox(false)}/>
     </ThemeCtx.Provider>
   );
 
