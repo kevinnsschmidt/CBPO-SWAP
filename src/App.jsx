@@ -793,8 +793,7 @@ export default function App(){
                 <option key={g} value={g}>{g}</option>
               ))}
             </select>
-          </div>
-          
+          </div>     
           <div style={{marginBottom:16}}>
             <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>GS Level (Optional)</label>
             <select value={form.gsLevel} onChange={e=>setForm(f=>({...f,gsLevel:e.target.value}))}
