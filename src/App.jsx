@@ -86,7 +86,7 @@ const PORTS = [
 ].sort();
 
 const LOCK_MS = 48 * 60 * 60 * 1000;
-const POLL_MS = 60 * 1000;
+const POLL_MS = 15 * 1000;
 const ADMIN = 'kevinsschmidt';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -395,7 +395,7 @@ function WelcomeScreen({user,onPost,onBrowse}){
 }
 
 // ── Settings Panel ────────────────────────────────────────────────────────────
-function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin}){
+function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin,isAdmin}){
   const C=useC();
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
@@ -429,11 +429,13 @@ function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin})
             <div style={{position:'absolute',top:3,left:dark?21:3,width:20,height:20,borderRadius:'50%',background:'white',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
           </button>
         </div>
+        {!isAdmin&&(
         <button onClick={onContactAdmin}
           style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:10,padding:'14px',display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:"'Inter',sans-serif",marginBottom:12}}>
           <MessageSquare size={16} color={C.blue}/>
           <span style={{fontSize:14,fontWeight:600,color:C.blue}}>Contact Admin</span>
         </button>
+        )}
         <button onClick={onLogout}
           style={{width:'100%',background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:10,padding:'14px',display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
           <LogOut size={16} color={C.red}/>
@@ -1048,9 +1050,10 @@ export default function App(){
         const prev=last.msgCounts?.[ck]||0;
         if(msgs.length>prev){
           const latest=msgs[msgs.length-1];
-          if(latest.sender_id!==myId){
+          if(latest.sender_id!==myId&&(!chatSession||chatSession.chainKey!==ck)){
             newNotifItems.push({type:'new_message',title:'New message in your match',body:`${latest.sender_name}: ${latest.text.slice(0,80)}${latest.text.length>80?'…':''}`,chainKey:ck});
-            if(!chatSession||chatSession.chainKey!==ck)setUnreadChats(prev=>({...prev,[ck]:(prev[ck]||0)+msgs.length-prev}));
+            setUnreadChats(prev=>({...prev,[ck]:(prev[ck]||0)+msgs.length-prev}));
+            playMessageSound();
           }
         }
         if(!last.msgCounts)last.msgCounts={};
@@ -1065,7 +1068,6 @@ export default function App(){
       setBellRing(true);setTimeout(()=>setBellRing(false),600);
       for(const n of stamped){
         const onClick=n.chainKey?()=>setPendingChat(n.chainKey):null;
-        if(n.type==='new_message') playMessageSound();
         fireNativeNotif(n.title,n.body,onClick);
       }
     }
@@ -1176,12 +1178,6 @@ export default function App(){
     await supabase.from('messages').insert([msg]);
     const readerId=isAdmin?'admin-'+user.id:user.id;
     await supabase.from('read_receipts').upsert({chain_key:supportSession.chainKey,user_id:readerId,read_at:new Date().toISOString()});
-    // Notify the other party
-    if(isAdmin){
-      fireNativeNotif('Admin replied','Your support message got a response — tap to view',null);
-    } else {
-      fireNativeNotif('New support message',`${user.username}: ${text.slice(0,60)}`,null);
-    }
   }
 
   function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
@@ -1244,7 +1240,8 @@ export default function App(){
   if(settingsPanel) return(
     <ThemeCtx.Provider value={C}>
       <SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout}
-        onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}}/>
+        onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}}
+        isAdmin={isAdmin}/>
     </ThemeCtx.Provider>
   );
   if(notifPanel) return(
