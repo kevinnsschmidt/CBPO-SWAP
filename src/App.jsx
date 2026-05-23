@@ -90,7 +90,7 @@ function dbToListing(row){
   return {
     id:row.id, name:row.name, currentPort:row.current_port,
     desiredPorts:row.desired_ports, contact:row.contact,
-    notes:row.notes||'', gsLevel:row.gs_level||'', createdAt:row.created_at,
+    notes:row.notes||'', gsLevel:row.gs_level||'', status:row.status||'', createdAt:row.created_at,
   };
 }
 function dbToLocks(rows){
@@ -444,7 +444,7 @@ export default function App(){
   const [queuePos,setQueuePos]=useState({});
   const [loading,setLoading]=useState(true);
   const [filter,setFilter]=useState('');
-  const [form,setForm]=useState({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:''});
+  const [form,setForm]=useState({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:'',status:''});
   const [postStatus,setPostStatus]=useState(null);
   const [myListing,setMyListing]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-my-listing'));}catch{return null;}});
   const [notifs,setNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-notifs'))||[];}catch{return [];}});
@@ -580,10 +580,10 @@ export default function App(){
       setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;
     }
     setPostStatus('saving');
-    const row={id:uuid(),name:form.name.trim(),current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel};
+    const row={id:uuid(),name:form.name.trim(),current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel,status:form.status};
     const {error}=await supabase.from('listings').insert([row]);
     if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
-    setForm({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:''});
+    setForm({name:'',currentPort:'',desiredPorts:[],contact:'',notes:'',gsLevel:'',status:''});
     setPostStatus('saved');
     setTimeout(()=>{setPostStatus(null);setTab('browse');},1600);
   }
@@ -654,6 +654,7 @@ export default function App(){
                       {l.name}
                       {l.id===myListing?.id&&<span style={{fontSize:10,fontWeight:700,color:C.blue,background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:3,padding:'1px 5px'}}>YOU</span>}
                       {l.gsLevel&&<span style={{fontSize:10,fontWeight:700,color:C.purple,background:C.purpleDim,border:`1px solid ${C.purpleBorder}`,borderRadius:3,padding:'1px 5px'}}>{l.gsLevel}</span>}
+                      {l.status&&<span style={{fontSize:10,fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:3,padding:'1px 5px'}}>{l.status}</span>}
                     </div>
                     <div style={{fontSize:11,color:C.muted,marginTop:2}}>{formatDate(l.createdAt)}</div>
                   </div>
@@ -703,6 +704,16 @@ export default function App(){
               <option value=''>Select GS level...</option>
               {['GS-5','GS-6','GS-7','GS-8','GS-9','GS-10','GS-11','GS-12'].map(g=>(
                 <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{marginBottom:16}}>
+            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.06em'}}>Status (Optional)</label>
+            <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}
+              style={{...inp,cursor:'pointer',appearance:'none'}}>
+              <option value=''>Select status...</option>
+              {['Pre-Academy','FLETC','Post-Academy','Officer'].map(s=>(
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
