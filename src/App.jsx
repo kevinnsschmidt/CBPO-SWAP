@@ -4,7 +4,6 @@ import { Search, ArrowRight, Trash2, Check, ChevronDown, Shield, RefreshCw,
          Sun, Moon, LogOut, User } from 'lucide-react';
 import { supabase } from './supabase';
 
-// ── Theme ─────────────────────────────────────────────────────────────────────
 const ThemeCtx = createContext({});
 const useC = () => useContext(ThemeCtx);
 
@@ -30,67 +29,90 @@ const DARK = {
 const PORTS = [
   // ATLANTA Field Office
   'Atlanta, GA (Hartsfield-Jackson)','Charlotte, NC','Nashville, TN','Memphis, TN',
-  'Savannah, GA','Jacksonville, FL',
+  'Savannah, GA','Jacksonville, FL','Brunswick, GA','Fernandina Beach, FL',
   // BALTIMORE Field Office
   'Baltimore/Washington (BWI), MD','Washington Dulles, VA','Richmond, VA','Norfolk, VA',
+  'Norfolk-Newport News, VA','Newport News, VA','Richmond-Petersburg, VA','Hopewall, VA',
+  'Wilmington, DE',
   // BOSTON Field Office
   'Boston, MA (Logan)','Portland, ME','Calais, ME','Houlton, ME','Burlington, VT',
   'Highgate Springs, VT','Providence, RI','Manchester, NH','Hartford, CT',
+  'Bangor, ME','Bar Harbor, ME','Eastport, ME','Rockland, ME','Belfast, ME','Searsport, ME',
+  'Portsmouth, NH','Gloucester, MA','New Bedford, MA','Plymouth, MA','Fall River, MA',
+  'Salem, MA','Provincetown, MA','Bridgeport, CT','New Haven, CT','New London, CT',
+  'Newport, RI','Mellville, RI',
   // BUFFALO Field Office
   'Buffalo, NY (Niagara Falls)','Niagara Falls, NY','Rochester, NY','Syracuse, NY',
-  'Ogdensburg, NY','Alexandria Bay, NY','Champlain, NY','Massena, NY',
+  'Ogdensburg, NY','Alexandria Bay, NY','Champlain, NY','Massena, NY','Albany, NY','Oswego, NY',
+  // CHARLOTTE Field Office
+  'Wilmington, NC','Beaufort-Morehead City, NC','Charleston, SC','Georgetown, SC',
   // CHICAGO Field Office
   "Chicago O'Hare, IL",'Indianapolis, IN','Louisville, KY','Cincinnati, OH','Columbus, OH',
   'Cleveland, OH','Minneapolis, MN','Milwaukee, WI','Kansas City, MO','St. Louis, MO',
-  'Omaha, NE','Des Moines, IA',
+  'Omaha, NE','Des Moines, IA','Duluth, MN','International Falls, MN',
+  'Marinette, WI','Green Bay, WI','Gary, IN','Toledo, OH','Erie, PA','Ashtabula, OH',
   // DETROIT Field Office
-  'Detroit, MI (Metropolitan)','Port Huron, MI','Sault Ste. Marie, MI','Flint, MI','Grand Rapids, MI',
+  'Detroit, MI (Metropolitan)','Port Huron, MI','Sault Ste. Marie, MI','Grand Rapids, MI',
+  'Saginaw/Bay City, MI','Battle Creek, MI','Escanaba, MI','Marquette, MI',
+  'Muskegon, MI','Grand Haven, MI','Rogers City, MI',
   // EL PASO Field Office
   'El Paso, TX','El Paso, TX (Airport)','El Paso, TX (Ysleta/Zaragoza)','Santa Teresa, NM',
   'Presidio, TX','Fabens, TX','Fort Hancock, TX','Albuquerque, NM',
   // HOUSTON Field Office
   'Houston, TX (IAH)','Houston, TX (Hobby)','Galveston, TX','Port Arthur, TX',
   'Corpus Christi, TX','Austin, TX','Dallas/Fort Worth, TX','San Antonio, TX',
+  'Texas City, TX','Freeport, TX','Beaumont, TX','Sabine, TX','Orange, TX','Port Lavaca, TX',
   // LAREDO Field Office
   'Laredo, TX','Laredo, TX (Colombia Bridge)','Eagle Pass, TX','Del Rio, TX',
-  'Roma, TX','Rio Grande City, TX','Piedras Negras, TX',
+  'Roma, TX','Rio Grande City, TX','Hidalgo/Pharr, TX','McAllen, TX','Brownsville, TX',
   // LOS ANGELES Field Office
   'Los Angeles, CA (LAX)','Los Angeles, CA (Seaport)','Long Beach, CA','Las Vegas, NV',
   'Ontario, CA','Phoenix, AZ','Denver, CO','Salt Lake City, UT','Reno, NV',
+  'El Segundo, CA','Port Hueneme, CA',
   // MIAMI Field Office
   'Miami, FL (MIA)','Miami, FL (Seaport)','Fort Lauderdale, FL','West Palm Beach, FL',
-  'Orlando, FL','Port Everglades, FL','Port Canaveral, FL',
+  'Orlando, FL','Port Everglades, FL','Port Canaveral, FL','Key West, FL',
+  'Fort Pierce, FL','Daytona Beach, FL','Tampa, FL','St. Petersburg, FL',
+  'Port Manatee, FL','Panama City, FL','Pensacola, FL','Fort Myers, FL','Sarasota, FL',
   // NEW ORLEANS Field Office
   'New Orleans, LA','New Orleans, LA (Airport)','Baton Rouge, LA','Mobile, AL','Gulfport, MS',
+  'Pascagoula, MS','Morgan City, LA','Gramercy, LA','Lake Charles, LA',
   // NEW YORK Field Office
-  'JFK, NY','Newark, NJ','Philadelphia, PA','Pittsburgh, PA','Harrisburg, PA','New York, NY (Seaport)',
+  'JFK, NY','Newark, NJ','Philadelphia, PA','Pittsburgh, PA','Harrisburg, PA',
+  'New York, NY (Seaport)','Perth Amboy, NJ',
   // PORTLAND Field Office
-  'Portland, OR','Eugene, OR','Medford, OR','Astoria, OR','Longview, WA',
+  'Portland, OR','Astoria, OR','Longview, WA','Coos Bay, OR','Newport, OR',
+  'Vancouver, WA','Kalama, WA',
   // SAN DIEGO Field Office
   'San Diego, CA (San Ysidro)','San Diego, CA (Otay Mesa)','San Diego, CA (Airport)',
   'Calexico, CA (East)','Calexico, CA (West)','Tecate, CA','Andrade, CA',
   // SAN FRANCISCO Field Office
   'San Francisco, CA (SFO)','Oakland, CA','Sacramento, CA','Fresno, CA','San Jose, CA',
-  'Stockton, CA','Anchorage, AK','Juneau, AK','Fairbanks, AK','Honolulu, HI','Maui, HI',
+  'Stockton, CA','Eureka, CA','Richmond, CA',
+  'Honolulu, HI','Hilo, HI','Kahului, HI','Kona, HI','Nawiliwili-Port Allen, HI','Maui, HI',
   // SAN JUAN Field Office
-  'San Juan, PR','Ponce, PR','Mayaguez, PR','Fajardo, PR','St. Thomas, USVI','St. Croix, USVI',
+  'San Juan, PR','Ponce, PR','Mayaguez, PR','Fajardo, PR','Aguadilla, PR',
+  'St. Thomas, USVI','St. Croix, USVI','Charlotte Amalie, VI','Christiansted, VI','Frederiksted, VI',
   // SEATTLE Field Office
   'Seattle, WA (SeaTac)','Seattle, WA (Seaport)','Tacoma, WA','Bellingham, WA','Blaine, WA',
   'Sumas, WA','Spokane, WA','Oroville, WA','Danville, WA','Lynden, WA','Point Roberts, WA',
-  // TAMPA Field Office
-  'Tampa, FL','Fort Myers, FL','Sarasota, FL','Key West, FL',
+  'Aberdeen, WA','Everett, WA','Port Angeles, WA','Port Townsend, WA','Anacortes, WA',
+  'Friday Harbor, WA','Olympia, WA','Neah Bay, WA',
+  // ALASKA
+  'Anchorage, AK','Juneau, AK','Fairbanks, AK','Ketchikan, AK','Sitka, AK',
+  'Skagway, AK','Wrangell, AK','Kodiak, AK','Dalton Cache, AK',
   // TUCSON Field Office
   'Tucson, AZ','Nogales, AZ','Douglas, AZ','Lukeville, AZ','Naco, AZ','Sasabe, AZ','Yuma, AZ',
-  // SOUTHWEST BORDER additional
-  'Hidalgo/Pharr, TX','McAllen, TX','Brownsville, TX',
 ].sort();
 
 const LOCK_MS = 48 * 60 * 60 * 1000;
 const POLL_MS = 15 * 1000;
 const ADMIN = 'kevinsschmidt';
 const ADMIN_EMAIL = 'kevinsschmidt@outlook.com';
+const EMAILJS_SERVICE = 'service_ub5lnea';
+const EMAILJS_TEMPLATE = 'template_j7mzt8h';
+const EMAILJS_KEY = '8_ca3_prUvUNV0uvd';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const uuid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const formatDate = iso => new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const formatMsgTime = iso => new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
@@ -171,7 +193,6 @@ function fireNativeNotif(title, body, onClick){
     }catch(e){}
   }
 }
-
 function playMessageSound(){
   try{
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
@@ -193,7 +214,6 @@ const NOTIF_META={
   new_message:{icon:'💬',color:'purple'},
 };
 
-// ── CSS ───────────────────────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600&display=swap');
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -213,30 +233,17 @@ const css = `
   input,textarea,select{font-family:'Inter',sans-serif;}
   input::placeholder,textarea::placeholder{color:#94a3b8;}
 `;
-
 const inp = C => ({
   width:'100%', background:C.surface2, border:`1px solid ${C.border}`,
   borderRadius:8, color:C.text, padding:'10px 14px', fontSize:16,
 });
 
-// ── Small Components ──────────────────────────────────────────────────────────
 function PortTag({label,onRemove}){
   const C=useC();
   return(
     <span style={{display:'inline-flex',alignItems:'center',gap:4,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,padding:'2px 8px',fontSize:12,color:C.green,fontFamily:"'Inter',sans-serif"}}>
       {label}{onRemove&&<X size={9} style={{cursor:'pointer',opacity:0.7}} onClick={onRemove}/>}
     </span>
-  );
-}
-
-function LockProgress({locked,total}){
-  const C=useC();
-  return(
-    <div style={{display:'flex',gap:3}}>
-      {Array.from({length:total}).map((_,i)=>(
-        <div key={i} style={{height:3,flex:1,borderRadius:2,background:i<locked?C.green:C.border,transition:'background 0.3s'}}/>
-      ))}
-    </div>
   );
 }
 
@@ -285,38 +292,42 @@ function Dropdown({label,value,options,onSelect,placeholder,multi=false,selected
 // ── Admin Reset Form ──────────────────────────────────────────────────────────
 function AdminResetForm({onBack}){
   const C=useC();
+  const [step,setStep]=useState('send');
+  const [enteredCode,setEnteredCode]=useState('');
   const [newPass,setNewPass]=useState('');
   const [confirm,setConfirm]=useState('');
-  const [token,setToken]=useState('');
-  const [step,setStep]=useState('verify'); // verify | reset | done
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
-  const [generatedToken,setGeneratedToken]=useState('');
+  const [expires,setExpires]=useState('');
 
-  async function requestReset(){
+  async function sendCode(){
     setLoading(true);setError('');
-    // Check admin exists
-    const {data}=await supabase.from('users').select('id').eq('username',ADMIN).maybeSingle();
-    if(!data){setError('Admin account not found');setLoading(false);return;}
-    // Generate a 6-digit token and store it temporarily
-    const tok=Math.floor(100000+Math.random()*900000).toString();
-    await supabase.from('users').update({reset_token:tok,reset_expires:new Date(Date.now()+15*60000).toISOString()}).eq('username',ADMIN);
-    // Show token (in production you'd email this, for now display it)
-    setGeneratedToken(tok);
-    setStep('token');
+    const passcode=Math.floor(100000+Math.random()*900000).toString();
+    const expireTime=new Date(Date.now()+15*60000);
+    const {error:dbErr}=await supabase.from('users').update({reset_token:passcode,reset_expires:expireTime.toISOString()}).eq('username',ADMIN);
+    if(dbErr){setError('Failed to generate code');setLoading(false);return;}
+    try{
+      await window.emailjs.send(EMAILJS_SERVICE,EMAILJS_TEMPLATE,{
+        email:ADMIN_EMAIL,
+        passcode,
+        time:expireTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
+      },EMAILJS_KEY);
+      setExpires(expireTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}));
+      setStep('verify');
+    }catch(e){setError('Failed to send email. Check EmailJS config.');}
     setLoading(false);
   }
 
-  async function verifyToken(){
+  async function verifyCode(){
     setLoading(true);setError('');
     const {data}=await supabase.from('users').select('reset_token,reset_expires').eq('username',ADMIN).maybeSingle();
-    if(!data||data.reset_token!==token){setError('Invalid token');setLoading(false);return;}
-    if(new Date(data.reset_expires)<new Date()){setError('Token expired — request a new one');setLoading(false);return;}
+    if(!data||data.reset_token!==enteredCode){setError('Invalid code');setLoading(false);return;}
+    if(new Date(data.reset_expires)<new Date()){setError('Code expired — request a new one');setLoading(false);return;}
     setStep('reset');setLoading(false);
   }
 
   async function doReset(){
-    if(newPass.length<6){setError('Password must be at least 6 characters');return;}
+    if(newPass.length<6){setError('Min 6 characters');return;}
     if(newPass!==confirm){setError('Passwords do not match');return;}
     setLoading(true);setError('');
     const hash=await hashPassword(ADMIN,newPass);
@@ -324,51 +335,31 @@ function AdminResetForm({onBack}){
     setStep('done');setLoading(false);
   }
 
+  const f={width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif",marginBottom:8};
+
   return(
     <div style={{marginTop:16,background:C.surface2,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>🔐 Admin Password Reset</div>
-      {step==='verify'&&(
-        <>
-          <p style={{fontSize:12,color:C.subtle,marginBottom:12,lineHeight:1.5}}>
-            This generates a one-time reset token. Copy it and use it to set a new password.
-          </p>
-          {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
-          <button onClick={requestReset} disabled={loading}
-            style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-            {loading?'Generating…':'Generate Reset Token'}
-          </button>
-        </>
-      )}
-      {step==='token'&&(
-        <>
-          <p style={{fontSize:12,color:C.subtle,marginBottom:8,lineHeight:1.5}}>Your one-time token (valid 15 min):</p>
-          <div style={{background:C.surface,border:`1px solid ${C.greenBorder}`,borderRadius:7,padding:'10px 14px',fontSize:22,fontWeight:800,letterSpacing:'0.2em',color:C.green,textAlign:'center',marginBottom:12,fontFamily:'monospace'}}>
-            {generatedToken}
-          </div>
-          <input value={token} onChange={e=>setToken(e.target.value)} placeholder="Enter token above" style={{...{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif"},marginBottom:8}}/>
-          {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
-          <button onClick={verifyToken} disabled={loading}
-            style={{width:'100%',background:C.blue,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-            {loading?'Verifying…':'Verify Token'}
-          </button>
-        </>
-      )}
-      {step==='reset'&&(
-        <>
-          <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="New password" style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
-          <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirm new password" style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:16,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
-          {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
-          <button onClick={doReset} disabled={loading}
-            style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-            {loading?'Saving…':'Set New Password'}
-          </button>
-        </>
-      )}
-      {step==='done'&&(
-        <div style={{textAlign:'center',color:C.green,fontSize:13,fontWeight:600}}>
-          ✓ Password updated! <button onClick={onBack} style={{background:'none',border:'none',color:C.blue,cursor:'pointer',fontSize:13,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>Log in</button>
-        </div>
-      )}
+      {step==='send'&&<>
+        <p style={{fontSize:12,color:C.subtle,marginBottom:12,lineHeight:1.5}}>A 6-digit code will be sent to <strong>{ADMIN_EMAIL}</strong></p>
+        {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+        <button onClick={sendCode} disabled={loading} style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>{loading?'Sending…':'Send Reset Code'}</button>
+      </>}
+      {step==='verify'&&<>
+        <p style={{fontSize:12,color:C.subtle,marginBottom:4,lineHeight:1.5}}>Code sent to <strong>{ADMIN_EMAIL}</strong></p>
+        <p style={{fontSize:11,color:C.muted,marginBottom:12}}>Valid until {expires}</p>
+        <input value={enteredCode} onChange={e=>setEnteredCode(e.target.value)} placeholder="Enter 6-digit code" style={f} maxLength={6}/>
+        {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+        <button onClick={verifyCode} disabled={loading} style={{width:'100%',background:C.blue,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif",marginBottom:8}}>{loading?'Verifying…':'Verify Code'}</button>
+        <button onClick={()=>setStep('send')} style={{width:'100%',background:'none',border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,padding:'8px',fontSize:12,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Resend code</button>
+      </>}
+      {step==='reset'&&<>
+        <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="New password" style={f}/>
+        <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Confirm new password" style={f}/>
+        {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+        <button onClick={doReset} disabled={loading} style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>{loading?'Saving…':'Set New Password'}</button>
+      </>}
+      {step==='done'&&<div style={{textAlign:'center',color:C.green,fontSize:13,fontWeight:600}}>✓ Password updated! <button onClick={onBack} style={{background:'none',border:'none',color:C.blue,cursor:'pointer',fontSize:13,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>Log in</button></div>}
       {step!=='done'&&<button onClick={onBack} style={{width:'100%',background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:12,marginTop:10,fontFamily:"'Inter',sans-serif"}}>Cancel</button>}
     </div>
   );
@@ -488,7 +479,7 @@ function AuthScreen({onAuth}){
   );
 }
 
-// ── Welcome Screen (post prompt) ──────────────────────────────────────────────
+// ── Welcome Screen ──────────────────────────────────────────────────────────
 function WelcomeScreen({user,onPost,onBrowse}){
   const C=useC();
   return(
@@ -515,7 +506,6 @@ function WelcomeScreen({user,onPost,onBrowse}){
   );
 }
 
-// ── Settings Panel ────────────────────────────────────────────────────────────
 function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin,isAdmin}){
   const C=useC();
   return(
@@ -567,7 +557,6 @@ function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin,i
   );
 }
 
-// ── Notification Panel ────────────────────────────────────────────────────────
 function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequestPerm,onOpenChat}){
   const C=useC();
   const unread=notifs.filter(n=>!n.read).length;
@@ -626,7 +615,6 @@ function NotifPanel({notifs,onClose,onMarkAllRead,onClearAll,notifPerm,onRequest
   );
 }
 
-// ── Chat Panel ────────────────────────────────────────────────────────────────
 function ChatPanel({chainKey,officers,messages,loading,currentUser,myListing,onSend,onClose}){
   const C=useC();
   const [text,setText]=useState('');
@@ -686,8 +674,7 @@ function ChatPanel({chainKey,officers,messages,loading,currentUser,myListing,onS
               <div key={msg.id} className="slide-up" style={{display:'flex',flexDirection:'column',alignItems:isMe?'flex-end':'flex-start',marginTop:showName&&i>0?10:2}}>
                 {showName&&!isMe&&<div style={{fontSize:11,fontWeight:600,color:C.subtle,marginBottom:3,marginLeft:4}}>{msg.senderName}</div>}
                 <div style={{maxWidth:'78%',padding:'9px 13px',borderRadius:isMe?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                  background:isMe?C.greenDim:C.surface2,
-                  border:`1px solid ${isMe?C.greenBorder:C.border}`,
+                  background:isMe?C.greenDim:C.surface2,border:`1px solid ${isMe?C.greenBorder:C.border}`,
                   fontSize:14,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>
                   {msg.text}
                 </div>
@@ -720,7 +707,6 @@ function ChatPanel({chainKey,officers,messages,loading,currentUser,myListing,onS
   );
 }
 
-// ── Match Card (formerly Chain Card) ─────────────────────────────────────────
 function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,currentUser,priorityRank,unreadMsgs=0,onOpenChat,isAdmin=false}){
   const C=useC();
   const now=Date.now();
@@ -736,13 +722,8 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
   const rankColor=priorityRank===1?C.green:priorityRank===2?C.gold:C.muted;
   const rankBorder=priorityRank===1?C.greenBorder:priorityRank===2?C.goldBorder:C.border;
 
-  // Both 2-way and 3-way use horizontal layout
-  const isHorizontal=true;
-
   return(
     <div className="fade-in" style={{background:allLocked?C.greenDim:C.surface,border:`1px solid ${allLocked?C.greenBorder:isMyMatch?C.blueBorder:C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
-
-      {/* Header */}
       <div style={{padding:'8px 12px',borderBottom:`1px solid ${allLocked?C.greenBorder:C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <Link2 size={10} color={type===3?C.gold:C.green}/>
@@ -758,90 +739,81 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
           <span style={{fontSize:10,color:allLocked?C.green:C.muted}}>{lockedCount}/{officers.length} 🔒</span>
         </div>
       </div>
-
-      {/* All locked banner */}
       {allLocked&&(
         <div style={{padding:'8px 12px',background:C.greenDim,borderBottom:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',gap:8}}>
           <span style={{fontSize:16}}>✅</span>
           <div style={{fontSize:12,fontWeight:700,color:C.green}}>All parties locked in — coordinate in chat then initiate HR</div>
         </div>
       )}
-
-      {/* Officers — horizontal layout */}
       <div style={{display:'flex',alignItems:'stretch',padding:'12px',overflowX:type===3?'auto':'visible',gap:8}}>
-          {lockState.map(({officer,lock,active},i)=>{
-            const countdown=active?formatCountdown(lock.expiresAt):null;
-            const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
-            const isMyRow=currentUser&&officer.userId===currentUser.id;
-            const isLast=i===lockState.length-1;
-            return(
-              <div key={officer.id} style={{display:'flex',alignItems:'center',flex:1}}>
-                {/* Officer card */}
-                <div style={{flex:1,minWidth:0,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
-                  <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:4,flexWrap:'wrap'}}>
-                    <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0,marginTop:3}}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,fontWeight:700,color:C.red,lineHeight:1.3}}>{officer.currentPort.split(',')[0]}</div>
-                      <div style={{display:'flex',alignItems:'center',gap:3,marginTop:2}}>
-                        <ArrowRight size={9} color={C.muted}/>
-                        <span style={{fontSize:11,color:C.green,lineHeight:1.3}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
-                      </div>
+        {lockState.map(({officer,lock,active},i)=>{
+          const countdown=active?formatCountdown(lock.expiresAt):null;
+          const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
+          const isMyRow=currentUser&&officer.userId===currentUser.id;
+          const isLast=i===lockState.length-1;
+          return(
+            <div key={officer.id} style={{display:'flex',alignItems:'center',flex:1}}>
+              <div style={{flex:1,minWidth:0,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
+                <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:4,flexWrap:'wrap'}}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0,marginTop:3}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:C.red,lineHeight:1.3}}>{officer.currentPort.split(',')[0]}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:3,marginTop:2}}>
+                      <ArrowRight size={9} color={C.muted}/>
+                      <span style={{fontSize:11,color:C.green,lineHeight:1.3}}>{officers[(i+1)%officers.length].currentPort.split(',')[0]}</span>
                     </div>
                   </div>
-                  <div style={{fontSize:10,color:C.muted,marginBottom:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
-                  {(isParticipant||isAdmin)&&<div style={{fontSize:10,color:C.subtle}}>📬 {officer.contact}</div>}
-                  <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
-                    {officer.gsLevel&&<span style={{fontSize:9,fontWeight:700,color:C.purple}}>{officer.gsLevel}</span>}
-                    {officer.status&&<span style={{fontSize:9,fontWeight:700,color:C.gold}}>{officer.status}</span>}
-                  </div>
-                  {/* Lock status */}
-                  {active?(
-                    <div style={{marginTop:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:4}}>
-                        <Lock size={9} color={soonExpire?C.gold:C.green}/>
-                        <span style={{fontSize:10,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
-                      </div>
-                      {isMyRow&&<button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
-                        style={{background:'none',border:`1px solid ${C.border}`,borderRadius:4,color:C.muted,fontSize:10,padding:'2px 7px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-                        Release
-                      </button>}
-                    </div>
-                  ):isMyRow?(
-                    <button onClick={()=>{if(window.confirm('Lock in? Hold expires in 48 hours.'))onLock(officer.id);}}
-                      style={{width:'100%',marginTop:6,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,color:C.green,fontSize:10,fontWeight:600,padding:'5px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
-                      <Lock size={9}/>Lock In
-                    </button>
-                  ):(
-                    <div style={{marginTop:6,fontSize:10,color:C.muted}}>Awaiting confirmation…</div>
-                  )}
                 </div>
-                {/* Arrows between officers */}
-                {!isLast&&(
-                  <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 6px',flexShrink:0,gap:4}}>
-                    <span style={{fontSize:12,color:C.muted}}>→</span>
-                    <span style={{fontSize:12,color:C.muted}}>←</span>
+                <div style={{fontSize:10,color:C.muted,marginBottom:2}}>⏳ Since {formatDate(officer.createdAt)}</div>
+                {(isParticipant||isAdmin)&&<div style={{fontSize:10,color:C.subtle}}>📬 {officer.contact}</div>}
+                <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
+                  {officer.gsLevel&&<span style={{fontSize:9,fontWeight:700,color:C.purple}}>{officer.gsLevel}</span>}
+                  {officer.status&&<span style={{fontSize:9,fontWeight:700,color:C.gold}}>{officer.status}</span>}
+                </div>
+                {active?(
+                  <div style={{marginTop:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:4}}>
+                      <Lock size={9} color={soonExpire?C.gold:C.green}/>
+                      <span style={{fontSize:10,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
+                    </div>
+                    {isMyRow&&<button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
+                      style={{background:'none',border:`1px solid ${C.border}`,borderRadius:4,color:C.muted,fontSize:10,padding:'2px 7px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+                      Release
+                    </button>}
                   </div>
+                ):isMyRow?(
+                  <button onClick={()=>{if(window.confirm('Lock in? Hold expires in 48 hours.'))onLock(officer.id);}}
+                    style={{width:'100%',marginTop:6,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,color:C.green,fontSize:10,fontWeight:600,padding:'5px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
+                    <Lock size={9}/>Lock In
+                  </button>
+                ):(
+                  <div style={{marginTop:6,fontSize:10,color:C.muted}}>Awaiting confirmation…</div>
                 )}
-
               </div>
-            );
-          })}
+              {!isLast&&(
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 6px',flexShrink:0,gap:4}}>
+                  <span style={{fontSize:12,color:C.muted}}>→</span>
+                  <span style={{fontSize:12,color:C.muted}}>←</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {(isParticipant||isAdmin)&&(
+        <div style={{padding:'0 12px 12px'}}>
+          <button onClick={onOpenChat}
+            style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:13,fontWeight:600,padding:'9px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+            <MessageSquare size={14}/>Open Match Chat
+            {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:11,fontWeight:700,marginLeft:4}}>{unreadMsgs} new</span>}
+          </button>
         </div>
-        {(isParticipant||isAdmin)&&(
-          <div style={{padding:'0 12px 12px'}}>
-            <button onClick={onOpenChat}
-              style={{width:'100%',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:8,color:C.blue,fontSize:13,fontWeight:600,padding:'9px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
-              <MessageSquare size={14}/>Open Match Chat
-              {unreadMsgs>0&&<span style={{background:C.red,color:'#fff',borderRadius:20,padding:'1px 7px',fontSize:11,fontWeight:700,marginLeft:4}}>{unreadMsgs} new</span>}
-            </button>
-          </div>
-        )}
+      )}
     </div>
   );
 }
 
-// ── Support Chat ──────────────────────────────────────────────────────────────
-function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose,onDeleteMessage}){
+function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClose}){
   const C=useC();
   const [text,setText]=useState('');
   const [sending,setSending]=useState(false);
@@ -921,7 +893,6 @@ function SupportChat({session,messages,loading,currentUser,isAdmin,onSend,onClos
   );
 }
 
-// ── Support Inbox (admin only) ─────────────────────────────────────────────────
 function SupportInbox({threads,currentUser,onOpen,onClose,onDeleteThread}){
   const C=useC();
   return(
@@ -971,7 +942,6 @@ function SupportInbox({threads,currentUser,onOpen,onClose,onDeleteThread}){
   );
 }
 
-// ── Admin Panel (user management) ────────────────────────────────────────────
 function AdminPanel({onClose,currentUser}){
   const C=useC();
   const [users,setUsers]=useState([]);
@@ -1064,7 +1034,6 @@ function AdminPanel({onClose,currentUser}){
   );
 }
 
-// ── Post Form ─────────────────────────────────────────────────────────────────
 function PostForm({currentUser,onPosted,onCancel,existingListing}){
   const C=useC();
   const [form,setForm]=useState({
@@ -1150,7 +1119,7 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
       <button onClick={submit} disabled={postStatus==='saving'||postStatus==='saved'}
         style={{width:'100%',border:'none',borderRadius:8,color:'#fff',padding:'13px',fontSize:15,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",
           background:postStatus==='saved'?'#059669':postStatus==='error'?'#dc2626':C.green,transition:'background 0.2s',marginBottom:10}}>
-        {postStatus==='saving'?'Posting…':postStatus==='saved'?'✓ Posted!':postStatus==='error'?'Fill required fields':'Post Swap Request'}
+        {postStatus==='saving'?(isEdit?'Saving…':'Posting…'):postStatus==='saved'?'✓ Saved!':postStatus==='error'?'Fill required fields':isEdit?'Save Changes':'Post Swap Request'}
       </button>
       {onCancel&&(
         <button onClick={onCancel}
@@ -1162,14 +1131,11 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
 export default function App(){
   const [dark,setDark]=useState(()=>localStorage.getItem('cbpo-dark')==='true');
   const C=dark?DARK:LIGHT;
-
   const [user,setUser]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-user'));}catch{return null;}});
-  const [screen,setScreen]=useState('main'); // 'main' | 'post'
-
+  const [screen,setScreen]=useState('main');
   const [tab,setTab]=useState('board');
   const [listings,setListings]=useState([]);
   const [locks,setLocks]=useState({});
@@ -1177,35 +1143,30 @@ export default function App(){
   const [queuePos,setQueuePos]=useState({});
   const [loading,setLoading]=useState(true);
   const [filter,setFilter]=useState('');
-
   const [notifs,setNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-notifs'))||[];}catch{return [];}});
   const [notifPerm,setNotifPerm]=useState('default');
   const [notifPanel,setNotifPanel]=useState(false);
   const [settingsPanel,setSettingsPanel]=useState(false);
   const [bellRing,setBellRing]=useState(false);
   const lastRef=useRef({chainKeys:[],lockCounts:{},allLockedKeys:[],msgCounts:{},supportMsgCount:0});
-
   const [chatSession,setChatSession]=useState(null);
   const [chatMessages,setChatMessages]=useState([]);
   const [chatLoading,setChatLoading]=useState(false);
   const [unreadChats,setUnreadChats]=useState({});
   const [pendingChat,setPendingChat]=useState(null);
   const realtimeRef=useRef(null);
-
-  // Support chat state
-  const [supportSession,setSupportSession]=useState(null); // {chainKey, username}
+  const [supportSession,setSupportSession]=useState(null);
   const [supportMessages,setSupportMessages]=useState([]);
   const [supportLoading,setSupportLoading]=useState(false);
   const [supportInbox,setSupportInbox]=useState(false);
   const [adminPanel,setAdminPanel]=useState(false);
-  const [supportThreads,setSupportThreads]=useState([]); // admin inbox
+  const [supportThreads,setSupportThreads]=useState([]);
   const [unreadSupport,setUnreadSupport]=useState(0);
   const supportRealtimeRef=useRef(null);
 
   const myListing=listings.find(l=>l.userId===user?.id)||null;
   const isAdmin=user?.username===ADMIN;
 
-  // Auto-open chat if tapped from notification
   useEffect(()=>{
     if(pendingChat&&listings.length>0){
       const officers=[...chains.two,...chains.three].find(ofs=>getChainKey(ofs)===pendingChat);
@@ -1250,14 +1211,12 @@ export default function App(){
     setListings(ls);
     setLocks(lk);
     setLoading(false);
-    // Seed lastRef so first poll doesn't fire stale notifications
     if(user){
       const myListing=ls.find(l=>l.userId===user.id);
       if(myListing){
         const initChains=computeChains(ls);
         const now=Date.now();
         const myChains=[...initChains.two,...initChains.three].filter(o=>o.some(x=>x.id===myListing.id));
-        // Get current message counts
         const msgCounts={};
         for(const officers of myChains){
           const ck=getChainKey(officers);
@@ -1309,7 +1268,8 @@ export default function App(){
       const currCount=currActive.length;
       const prevCount=last.lockCounts?.[ck]||0;
       const wasKnown=last.chainKeys?.includes(ck);
-      const iAmInChain=officers.some(o=>o.id===myListing?.id); if(!wasKnown&&iAmInChain)newNotifItems.push({type:'match_found',title:'New match found!',body:`Your listing matched a ${officers.length}-way swap. Check the Matches tab.`});
+      const iAmInChain=officers.some(o=>o.id===myListing?.id);
+      if(!wasKnown&&iAmInChain)newNotifItems.push({type:'match_found',title:'New match found!',body:`Your listing matched a ${officers.length}-way swap. Check the Matches tab.`});
       if(wasKnown&&currCount>prevCount&&iAmInChain)newNotifItems.push({type:'lock_placed',title:'Match updated',body:`${currCount}/${officers.length} officers confirmed.`});
       if(currCount===officers.length&&!last.allLockedKeys?.includes(ck)&&iAmInChain)newNotifItems.push({type:'all_locked',title:'All parties confirmed! 🎉',body:'Everyone is ready. Open the match chat to coordinate.'});
       const {data:msgs}=await supabase.from('messages').select('*').eq('chain_key',ck).order('created_at');
@@ -1338,20 +1298,14 @@ export default function App(){
         fireNativeNotif(n.title,n.body,onClick);
       }
     }
-    // Check support messages
     if(isAdmin){
       const {data:supportMsgs}=await supabase.from('messages').select('chain_key,sender_id,sender_name,text,created_at').ilike('chain_key','support-%').order('created_at',{ascending:false});
       if(supportMsgs?.length){
         const threads={};
         for(const m of supportMsgs){
           const ck=m.chain_key;
-          if(!threads[ck]){
-            // Extract username from chain_key: support-{userId} — use sender_name of non-admin msg
-            const uname=m.sender_name===ADMIN?threads[ck]?.username||'Unknown':m.sender_name;
-            threads[ck]={chainKey:ck,username:uname,latest:m,unread:0};
-          } else {
-            if(m.sender_name!==ADMIN) threads[ck].username=m.sender_name;
-          }
+          if(!threads[ck]){threads[ck]={chainKey:ck,username:m.sender_name===ADMIN?'Unknown':m.sender_name,latest:m,unread:0};}
+          else{if(m.sender_name!==ADMIN) threads[ck].username=m.sender_name;}
         }
         setSupportThreads(Object.values(threads));
         const {data:receipts}=await supabase.from('read_receipts').select('chain_key,read_at').eq('user_id','admin-'+user.id);
@@ -1361,9 +1315,17 @@ export default function App(){
           if(!receipt||new Date(t.latest.created_at)>new Date(receipt.read_at)) totalUnread++;
         }
         setUnreadSupport(totalUnread);
+        const prevSupportCount=lastRef.current.supportThreadCount||0;
+        const newSupportMsgs=supportMsgs.filter(m=>m.sender_name!==ADMIN);
+        if(newSupportMsgs.length>prevSupportCount&&prevSupportCount>0){
+          const latest=newSupportMsgs[0];
+          newNotifItems.push({type:'new_message',title:`Support message from ${latest.sender_name}`,body:latest.text.slice(0,80)});
+          playMessageSound();
+          setUnreadSupport(prev=>prev+1);
+        }
+        lastRef.current.supportThreadCount=newSupportMsgs.length;
       }
     } else {
-      // Check if admin replied to my support chat
       const mySupportKey='support-'+user.id;
       const {data:supportMsgs}=await supabase.from('messages').select('*').eq('chain_key',mySupportKey).order('created_at',{ascending:false}).limit(1);
       if(supportMsgs?.length){
@@ -1379,27 +1341,22 @@ export default function App(){
         }
       }
     }
-
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
       lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
       allLockedKeys:myChains.filter(o=>{const ck=getChainKey(o);return Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length===o.length;}).map(getChainKey),
       msgCounts:last.msgCounts||{},
+      supportThreadCount:lastRef.current.supportThreadCount||0,
     };
   }
 
   async function openChat(chainKey,officers){
     const isParticipant=myListing&&officers.some(o=>o.id===myListing.id);
-    if(!isParticipant&&!isAdmin){
-      alert('This chat is private between matched officers only.');
-      return;
-    }
+    if(!isParticipant&&!isAdmin){alert('This chat is private between matched officers only.');return;}
     setChatSession({chainKey,officers});setChatLoading(true);
     const {data}=await supabase.from('messages').select('*').eq('chain_key',chainKey).order('created_at');
     const msgs=(data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}));
-    setChatMessages(msgs);
-    setChatLoading(false);
-    // Set known count so poll doesn't re-notify
+    setChatMessages(msgs);setChatLoading(false);
     if(!lastRef.current.msgCounts) lastRef.current.msgCounts={};
     lastRef.current.msgCounts[chainKey]=data?.length||0;
     if(myListing){
@@ -1426,45 +1383,37 @@ export default function App(){
     await supabase.from('locks').upsert({chain_key:ck,officer_id:oid,locked_at:now.toISOString(),expires_at:expires.toISOString()});
     await fetchLocks();
   }
-  async function unlockOfficer(ck,oid){
-    await supabase.from('locks').delete().eq('chain_key',ck).eq('officer_id',oid);
-    await fetchLocks();
-  }
+  async function unlockOfficer(ck,oid){await supabase.from('locks').delete().eq('chain_key',ck).eq('officer_id',oid);await fetchLocks();}
   async function removeListing(id){await supabase.from('listings').delete().eq('id',id);}
 
-  async function openSupportChat(chainKey, username){
-    setSupportSession({chainKey, username});
-    setSupportLoading(true);
+  async function openSupportChat(chainKey,username){
+    setSupportSession({chainKey,username});setSupportLoading(true);
     const {data}=await supabase.from('messages').select('*').eq('chain_key',chainKey).order('created_at');
     setSupportMessages((data||[]).map(r=>({id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at})));
     setSupportLoading(false);
-    // Mark as read
     const readerId=isAdmin?'admin-'+user.id:user.id;
     await supabase.from('read_receipts').upsert({chain_key:chainKey,user_id:readerId,read_at:new Date().toISOString()});
     if(isAdmin) setUnreadSupport(prev=>Math.max(0,prev-1));
-    // Realtime
     if(supportRealtimeRef.current) supabase.removeChannel(supportRealtimeRef.current);
     supportRealtimeRef.current=supabase.channel('support-'+chainKey)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chain_key=eq.${chainKey}`},payload=>{
         const r=payload.new;
         setSupportMessages(prev=>[...prev,{id:r.id,senderId:r.sender_id,senderName:r.sender_name,text:r.text,createdAt:r.created_at}]);
+        if(r.sender_id!==user?.id) playMessageSound();
       }).subscribe();
   }
-
   function closeSupportChat(){
     if(supportRealtimeRef.current){supabase.removeChannel(supportRealtimeRef.current);supportRealtimeRef.current=null;}
     setSupportSession(null);
   }
-
   async function sendSupportMessage(text){
     if(!user||!supportSession||!text.trim()) return;
     const msg={id:uuid(),chain_key:supportSession.chainKey,sender_id:user.id,sender_name:user.username,text,created_at:new Date().toISOString()};
     const {error}=await supabase.from('messages').insert([msg]);
-    if(error){console.error('Support message error:',error.message);alert('Failed to send: '+error.message);return;}
+    if(error){alert('Failed to send: '+error.message);return;}
     const readerId=isAdmin?'admin-'+user.id:user.id;
     await supabase.from('read_receipts').upsert({chain_key:supportSession.chainKey,user_id:readerId,read_at:new Date().toISOString()});
   }
-
   async function loadSupportThreads(){
     if(!isAdmin) return;
     const {data:supportMsgs}=await supabase.from('messages').select('chain_key,sender_id,sender_name,text,created_at').ilike('chain_key','support-%').order('created_at',{ascending:false});
@@ -1472,25 +1421,16 @@ export default function App(){
       const threads={};
       for(const m of supportMsgs){
         const ck=m.chain_key;
-        if(!threads[ck]){
-          threads[ck]={chainKey:ck,username:m.sender_name,latest:m};
-        }
+        if(!threads[ck]){threads[ck]={chainKey:ck,username:m.sender_name,latest:m};}
         if(m.sender_name!==ADMIN) threads[ck].username=m.sender_name;
       }
       setSupportThreads(Object.values(threads));
     }
   }
-
-  async function deleteSupportMessage(msgId){
-    await supabase.from('messages').delete().eq('id',msgId);
-    setSupportMessages(prev=>prev.filter(m=>m.id!==msgId));
-  }
-
   async function deleteSupportThread(chainKey){
     await supabase.from('messages').delete().eq('chain_key',chainKey);
     setSupportThreads(prev=>prev.filter(t=>t.chainKey!==chainKey));
   }
-
   function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
   function handleLogout(){setUser(null);localStorage.removeItem('cbpo-user');setListings([]);setLocks({});setNotifs([]);setSettingsPanel(false);}
   function toggleDark(){const nd=!dark;setDark(nd);localStorage.setItem('cbpo-dark',String(nd));}
@@ -1502,29 +1442,12 @@ export default function App(){
     ?listings.filter(l=>l.currentPort.toLowerCase().includes(filter.toLowerCase())||l.desiredPorts.some(p=>p.toLowerCase().includes(filter.toLowerCase()))||(l.gsLevel&&l.gsLevel.toLowerCase().includes(filter.toLowerCase()))||(l.status&&l.status.toLowerCase().includes(filter.toLowerCase())))
     :listings;
 
-  const totalMatches=isAdmin
-    ?chains.two.length+chains.three.length
-    :[...chains.two,...chains.three].filter(officers=>myListing&&officers.some(o=>o.id===myListing.id)).length;
+  const totalMatches=isAdmin?chains.two.length+chains.three.length:[...chains.two,...chains.three].filter(officers=>myListing&&officers.some(o=>o.id===myListing.id)).length;
   const unreadCount=notifs.filter(n=>!n.read).length;
   const totalUnreadChat=Object.values(unreadChats).reduce((a,b)=>a+b,0);
 
-  // ── Render: not logged in ──
-  if(!user) return(
-    <ThemeCtx.Provider value={C}>
-      <AuthScreen onAuth={handleLogin}/>
-    </ThemeCtx.Provider>
-  );
-
-  // ── Render: welcome / force post ──
-  if(!myListing&&screen!=='main'&&screen!=='post'){
-    return(
-      <ThemeCtx.Provider value={C}>
-        <WelcomeScreen user={user} onPost={()=>setScreen('post')} onBrowse={()=>setScreen('main')}/>
-      </ThemeCtx.Provider>
-    );
-  }
-
-  // ── Render: post form full screen ──
+  if(!user) return(<ThemeCtx.Provider value={C}><AuthScreen onAuth={handleLogin}/></ThemeCtx.Provider>);
+  if(!myListing&&screen!=='main'&&screen!=='post'){return(<ThemeCtx.Provider value={C}><WelcomeScreen user={user} onPost={()=>setScreen('post')} onBrowse={()=>setScreen('main')}/></ThemeCtx.Provider>);}
   if(screen==='post'||screen==='edit') return(
     <ThemeCtx.Provider value={C}>
       <div style={{minHeight:'100vh',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
@@ -1542,59 +1465,17 @@ export default function App(){
       </div>
     </ThemeCtx.Provider>
   );
+  if(chatSession) return(<ThemeCtx.Provider value={C}><ChatPanel chainKey={chatSession.chainKey} officers={chatSession.officers} messages={chatMessages} loading={chatLoading} currentUser={user} myListing={myListing} onSend={sendMessage} onClose={closeChat}/></ThemeCtx.Provider>);
+  if(settingsPanel) return(<ThemeCtx.Provider value={C}><SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout} onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}} isAdmin={isAdmin}/></ThemeCtx.Provider>);
+  if(notifPanel) return(<ThemeCtx.Provider value={C}><NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs} notifPerm={notifPerm} onRequestPerm={requestNotifPermission} onOpenChat={ck=>{setNotifPanel(false);setPendingChat(ck);}}/></ThemeCtx.Provider>);
+  if(adminPanel) return(<ThemeCtx.Provider value={C}><AdminPanel onClose={()=>setAdminPanel(false)} currentUser={user}/></ThemeCtx.Provider>);
+  if(supportSession) return(<ThemeCtx.Provider value={C}><SupportChat session={supportSession} messages={supportMessages} loading={supportLoading} currentUser={user} isAdmin={isAdmin} onSend={sendSupportMessage} onClose={closeSupportChat}/></ThemeCtx.Provider>);
+  if(supportInbox) return(<ThemeCtx.Provider value={C}><SupportInbox threads={supportThreads} currentUser={user} onOpen={(ck,un)=>{setSupportInbox(false);openSupportChat(ck,un);}} onClose={()=>setSupportInbox(false)} onDeleteThread={deleteSupportThread}/></ThemeCtx.Provider>);
 
-  // ── Render: overlays ──
-  if(chatSession) return(
-    <ThemeCtx.Provider value={C}>
-      <ChatPanel chainKey={chatSession.chainKey} officers={chatSession.officers} messages={chatMessages}
-        loading={chatLoading} currentUser={user} myListing={myListing} onSend={sendMessage} onClose={closeChat}/>
-    </ThemeCtx.Provider>
-  );
-  if(settingsPanel) return(
-    <ThemeCtx.Provider value={C}>
-      <SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout}
-        onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}}
-        isAdmin={isAdmin}/>
-    </ThemeCtx.Provider>
-  );
-  if(notifPanel) return(
-    <ThemeCtx.Provider value={C}>
-      <NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs}
-        notifPerm={notifPerm} onRequestPerm={requestNotifPermission}
-        onOpenChat={ck=>{setNotifPanel(false);setPendingChat(ck);}}/>
-    </ThemeCtx.Provider>
-  );
-
-  // ── Render: admin panel ──
-  if(adminPanel) return(
-    <ThemeCtx.Provider value={C}>
-      <AdminPanel onClose={()=>setAdminPanel(false)} currentUser={user}/>
-    </ThemeCtx.Provider>
-  );
-
-  // ── Render: support chat ──
-  if(supportSession) return(
-    <ThemeCtx.Provider value={C}>
-      <SupportChat session={supportSession} messages={supportMessages} loading={supportLoading}
-        currentUser={user} isAdmin={isAdmin} onSend={sendSupportMessage} onClose={closeSupportChat}
-        onDeleteMessage={deleteSupportMessage}/>
-    </ThemeCtx.Provider>
-  );
-
-  // ── Render: support inbox (admin) ──
-  if(supportInbox) return(
-    <ThemeCtx.Provider value={C}>
-      <SupportInbox threads={supportThreads} currentUser={user} onOpen={(ck,un)=>{setSupportInbox(false);openSupportChat(ck,un);}} onClose={()=>setSupportInbox(false)} onDeleteThread={deleteSupportThread}/>
-    </ThemeCtx.Provider>
-  );
-
-  // ── Render: main app ──
   return(
     <ThemeCtx.Provider value={C}>
       <div style={{minHeight:'100vh',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text}}>
         <style>{css}</style>
-
-        {/* Header */}
         <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,position:'sticky',top:0,zIndex:100}}>
           <div style={{height:'env(safe-area-inset-top)',background:C.surface}}/>
           <div style={{padding:'12px 18px',display:'flex',alignItems:'center',gap:12}}>
@@ -1621,61 +1502,29 @@ export default function App(){
             </div>
           </div>
         </div>
-
-        {/* Tabs */}
         <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,display:'flex'}}>
-          <button onClick={()=>setTab('board')} className="tab"
-            style={{flex:1,background:'none',border:'none',borderBottom:tab==='board'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='board'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-            Board ({listings.length})
-          </button>
-          <button onClick={()=>setTab('matches')} className="tab"
-            style={{flex:1,background:'none',border:'none',borderBottom:tab==='matches'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='matches'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-            Matches{totalMatches?` (${totalMatches})`:''}
-          </button>
-          <button onClick={()=>setTab('mypost')} className="tab"
-            style={{flex:1,background:'none',border:'none',borderBottom:tab==='mypost'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='mypost'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-            My Post
-          </button>
-          {isAdmin&&(
-            <button onClick={()=>{setSupportInbox(true);loadSupportThreads();}} className="tab"
-              style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.purple,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-              Support{unreadSupport>0?` (${unreadSupport})`:''}
-            </button>
-          )}
-          {isAdmin&&(
-            <button onClick={()=>setAdminPanel(true)} className="tab"
-              style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.red,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-              Users
-            </button>
-          )}
+          <button onClick={()=>setTab('board')} className="tab" style={{flex:1,background:'none',border:'none',borderBottom:tab==='board'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='board'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Board ({listings.length})</button>
+          <button onClick={()=>setTab('matches')} className="tab" style={{flex:1,background:'none',border:'none',borderBottom:tab==='matches'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='matches'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Matches{totalMatches?` (${totalMatches})`:''}</button>
+          <button onClick={()=>setTab('mypost')} className="tab" style={{flex:1,background:'none',border:'none',borderBottom:tab==='mypost'?`2px solid ${C.green}`:'2px solid transparent',color:tab==='mypost'?C.green:C.muted,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>My Post</button>
+          {isAdmin&&<button onClick={()=>{setSupportInbox(true);loadSupportThreads();}} className="tab" style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.purple,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Support{unreadSupport>0?` (${unreadSupport})`:''}</button>}
+          {isAdmin&&<button onClick={()=>setAdminPanel(true)} className="tab" style={{flex:1,background:'none',border:'none',borderBottom:'2px solid transparent',color:C.red,padding:'11px 6px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Users</button>}
         </div>
 
-        {/* BOARD */}
         {tab==='board'&&(
           <div>
-            {/* Search + Post button */}
             <div style={{padding:'12px 16px',display:'flex',gap:8,alignItems:'center',borderBottom:`1px solid ${C.border}`,background:C.surface}}>
               <div style={{position:'relative',flex:1}}>
                 <Search size={13} color={C.muted} style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
-                <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Search port or GS level…"
-                  style={{...inp(C),paddingLeft:32,padding:'8px 12px 8px 32px',fontSize:14}}/>
+                <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Search port or GS level…" style={{...inp(C),paddingLeft:32,padding:'8px 12px 8px 32px',fontSize:14}}/>
               </div>
-              {!myListing&&(
-                <button onClick={()=>setScreen('post')}
-                  style={{background:C.green,border:'none',borderRadius:8,color:'#fff',padding:'8px 14px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",whiteSpace:'nowrap'}}>
-                  + Post
-                </button>
-              )}
+              {!myListing&&<button onClick={()=>setScreen('post')} style={{background:C.green,border:'none',borderRadius:8,color:'#fff',padding:'8px 14px',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",whiteSpace:'nowrap'}}>+ Post</button>}
             </div>
-
-            {/* No listing banner */}
             {!myListing&&(
               <div style={{margin:'12px 16px',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:9,padding:'12px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div style={{fontSize:13,color:C.blue}}>You haven't posted a swap yet</div>
                 <button onClick={()=>setScreen('post')} style={{background:C.blue,border:'none',borderRadius:6,color:'#fff',fontSize:12,fontWeight:600,padding:'5px 12px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Post now</button>
               </div>
             )}
-
             {loading?(
               <div style={{textAlign:'center',padding:60,color:C.muted}}><RefreshCw size={20} style={{animation:'spin 0.8s linear infinite'}}/></div>
             ):filtered.length===0?(
@@ -1686,14 +1535,12 @@ export default function App(){
               </div>
             ):(
               <div style={{background:C.surface}}>
-                {/* Column headers */}
                 <div style={{padding:'6px 16px',display:'flex',alignItems:'center',gap:8,background:C.surface2,borderBottom:`1px solid ${C.border}`}}>
                   <div style={{width:28,fontSize:10,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:'0.05em'}}>#</div>
                   <div style={{flex:1,fontSize:10,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:'0.05em'}}>Route & Details</div>
                 </div>
                 {filtered.map(l=>{
                   const isOwn=user&&l.userId===user.id;
-                  const canDelete=isOwn||isAdmin;
                   const myQueueNums=Object.values(queuePos[l.id]||{});
                   const qNum=myQueueNums.length>0?Math.min(...myQueueNums):'?';
                   return(
@@ -1705,21 +1552,16 @@ export default function App(){
                           <ArrowRight size={10} color={C.muted}/>
                           <span style={{fontSize:13,color:C.green}}>{l.desiredPorts.map(p=>p.split(',')[0]).join(', ')}</span>
                         </div>
-                        {isAdmin&&<div style={{fontSize:12,color:C.text,fontWeight:500,marginTop:2}}>{l.name} · 📬 {l.contact}</div>}
+                        {isAdmin&&<div style={{fontSize:12,color:C.text,fontWeight:500,marginTop:2}}>{l.name}</div>}
                         <div style={{display:'flex',gap:6,marginTop:3,alignItems:'center',flexWrap:'wrap'}}>
                           {l.gsLevel&&<span style={{fontSize:10,fontWeight:700,color:C.purple}}>{l.gsLevel}</span>}
                           {l.status&&<span style={{fontSize:10,fontWeight:600,color:C.gold}}>{l.status}</span>}
-                          
-                          
                           <span style={{fontSize:10,color:C.muted}}>{formatDate(l.createdAt)}</span>
                         </div>
                       </div>
                       <div style={{display:'flex',gap:4,flexShrink:0}}>
                         {isOwn&&<button onClick={()=>setScreen('edit')} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:5,cursor:'pointer',color:C.muted,padding:'4px 8px',fontSize:11,fontFamily:"'Inter',sans-serif"}}>Edit</button>}
-                        {isAdmin&&!isOwn&&<button onClick={()=>{if(window.confirm('Remove this listing?'))removeListing(l.id);}}
-                          style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4}}>
-                          <Trash2 size={13}/>
-                        </button>}
+                        {isAdmin&&!isOwn&&<button onClick={()=>{if(window.confirm('Remove this listing?'))removeListing(l.id);}} style={{background:'none',border:'none',cursor:'pointer',color:C.muted,padding:4}}><Trash2 size={13}/></button>}
                       </div>
                     </div>
                   );
@@ -1729,14 +1571,13 @@ export default function App(){
           </div>
         )}
 
-        {/* MATCHES */}
         {tab==='matches'&&(
           <div style={{padding:16}}>
             {chains.two.length===0&&chains.three.length===0?(
               <div style={{textAlign:'center',padding:60,color:C.muted}}>
                 <div style={{fontSize:36,marginBottom:10}}>🔗</div>
                 <div style={{fontWeight:600,fontSize:15,marginBottom:4,color:C.text}}>No matches yet</div>
-                <div style={{fontSize:13}}>{myListing?'We\'ll notify you when your listing gets a match':'Post your swap to get matched automatically'}</div>
+                <div style={{fontSize:13}}>{myListing?"We'll notify you when your listing gets a match":'Post your swap to get matched automatically'}</div>
               </div>
             ):sortByPriority([...chains.two,...chains.three]).filter(officers=>
               isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
@@ -1749,8 +1590,8 @@ export default function App(){
             ):(
               <>
                 {sortByPriority([...chains.two,...chains.three]).filter(officers=>
-              isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
-            ).map((officers,i)=>{
+                  isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
+                ).map((officers,i)=>{
                   const ck=getChainKey(officers);
                   const type=officers.length;
                   return<MatchCard key={ck} officers={officers} type={type} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
@@ -1770,10 +1611,7 @@ export default function App(){
                 <div style={{fontSize:36,marginBottom:12}}>📋</div>
                 <div style={{fontWeight:600,fontSize:16,color:C.text,marginBottom:6}}>You haven't posted yet</div>
                 <div style={{fontSize:13,color:C.muted,marginBottom:24}}>Post your swap and get matched automatically</div>
-                <button onClick={()=>setScreen('post')}
-                  style={{background:C.green,border:'none',borderRadius:12,color:'#fff',padding:'14px 32px',fontSize:16,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-                  + Post Your Swap
-                </button>
+                <button onClick={()=>setScreen('post')} style={{background:C.green,border:'none',borderRadius:12,color:'#fff',padding:'14px 32px',fontSize:16,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>+ Post Your Swap</button>
               </div>
             ):(
               <div>
@@ -1784,14 +1622,8 @@ export default function App(){
                       <div style={{fontSize:11,color:C.muted}}>Posted {formatDate(myListing.createdAt)}</div>
                     </div>
                     <div style={{display:'flex',gap:8}}>
-                      <button onClick={()=>setScreen('edit')}
-                        style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:7,color:C.blue,fontSize:13,fontWeight:600,padding:'7px 14px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-                        Edit
-                      </button>
-                      <button onClick={()=>{if(window.confirm('Delete your listing?'))removeListing(myListing.id);}}
-                        style={{background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:7,color:C.red,fontSize:13,fontWeight:600,padding:'7px 14px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-                        Delete
-                      </button>
+                      <button onClick={()=>setScreen('edit')} style={{background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:7,color:C.blue,fontSize:13,fontWeight:600,padding:'7px 14px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Edit</button>
+                      <button onClick={()=>{if(window.confirm('Delete your listing?'))removeListing(myListing.id);}} style={{background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:7,color:C.red,fontSize:13,fontWeight:600,padding:'7px 14px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>Delete</button>
                     </div>
                   </div>
                   <div style={{marginBottom:12}}>
@@ -1801,9 +1633,7 @@ export default function App(){
                   <div style={{marginBottom:12}}>
                     <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,textTransform:'uppercase',letterSpacing:'0.05em'}}>Desired Station(s)</div>
                     <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                      {myListing.desiredPorts.map(p=>(
-                        <span key={p} style={{background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:6,padding:'4px 10px',fontSize:13,color:C.green,fontWeight:600}}>{p}</span>
-                      ))}
+                      {myListing.desiredPorts.map(p=>(<span key={p} style={{background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:6,padding:'4px 10px',fontSize:13,color:C.green,fontWeight:600}}>{p}</span>))}
                     </div>
                   </div>
                   <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
@@ -1814,14 +1644,8 @@ export default function App(){
                     <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>Contact</div>
                     <div style={{fontSize:13,color:C.text}}>📬 {myListing.contact}</div>
                   </div>
-                  {myListing.notes&&(
-                    <div>
-                      <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>Notes</div>
-                      <div style={{fontSize:13,color:C.subtle,lineHeight:1.5}}>{myListing.notes}</div>
-                    </div>
-                  )}
+                  {myListing.notes&&(<div><div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>Notes</div><div style={{fontSize:13,color:C.subtle,lineHeight:1.5}}>{myListing.notes}</div></div>)}
                 </div>
-                {/* Queue positions */}
                 <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:16}}>
                   <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>Your Queue Positions</div>
                   {myListing.desiredPorts.map(port=>{
@@ -1829,12 +1653,7 @@ export default function App(){
                     return(
                       <div key={port} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:`1px solid ${C.border}`}}>
                         <div style={{fontSize:13,color:C.text}}>{port}</div>
-                        <span style={{fontSize:12,fontWeight:700,padding:'2px 10px',borderRadius:4,
-                          background:pos===1?C.greenDim:pos===2?C.goldDim:'rgba(255,255,255,0.05)',
-                          border:`1px solid ${pos===1?C.greenBorder:pos===2?C.goldBorder:'rgba(255,255,255,0.08)'}`,
-                          color:pos===1?C.green:pos===2?C.gold:C.muted}}>
-                          #{pos} in line
-                        </span>
+                        <span style={{fontSize:12,fontWeight:700,padding:'2px 10px',borderRadius:4,background:pos===1?C.greenDim:pos===2?C.goldDim:'rgba(255,255,255,0.05)',border:`1px solid ${pos===1?C.greenBorder:pos===2?C.goldBorder:'rgba(255,255,255,0.08)'}`,color:pos===1?C.green:pos===2?C.gold:C.muted}}>#{pos} in line</span>
                       </div>
                     );
                   })}
