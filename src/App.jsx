@@ -57,7 +57,7 @@ const PORTS = [
   'Muskegon, MI','Grand Haven, MI','Rogers City, MI',
   // EL PASO Field Office
   'El Paso, TX','El Paso, TX (Airport)','El Paso, TX (Ysleta/Zaragoza)','Santa Teresa, NM',
-  'Presidio, TX','Fabens, TX','Fort Hancock, TX','Albuquerque, NM',
+  'Presidio, TX','Fabens, TX','Fort Hancock, TX','Albuquerque, NM','Columbus, NM',
   // HOUSTON Field Office
   'Houston, TX (IAH)','Houston, TX (Hobby)','Galveston, TX','Port Arthur, TX',
   'Corpus Christi, TX','Austin, TX','Dallas/Fort Worth, TX','San Antonio, TX',
@@ -212,6 +212,7 @@ const NOTIF_META={
   all_locked:{icon:'✅',color:'green'},
   lock_expired:{icon:'⏰',color:'muted'},
   new_message:{icon:'💬',color:'purple'},
+  announcement:{icon:'📢',color:'blue'},
 };
 
 const css = `
@@ -973,6 +974,19 @@ function AdminPanel({onClose,currentUser}){
     setResetDone(true);
   }
 
+  const [showAnnounce,setShowAnnounce]=useState(false);
+  const [announceTitle,setAnnounceTitle]=useState('');
+  const [announceBody,setAnnounceBody]=useState('');
+  const [announceSent,setAnnounceSent]=useState(false);
+
+  async function sendAnnouncement(){
+    if(!announceTitle.trim()||!announceBody.trim()) return;
+    const id=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    await supabase.from('announcements').insert([{id,title:announceTitle.trim(),body:announceBody.trim()}]);
+    setAnnounceTitle('');setAnnounceBody('');setShowAnnounce(false);setAnnounceSent(true);
+    setTimeout(()=>setAnnounceSent(false),3000);
+  }
+
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
       <style>{css}</style>
@@ -984,8 +998,36 @@ function AdminPanel({onClose,currentUser}){
           </button>
           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,letterSpacing:'0.05em',color:C.text}}>USER MANAGEMENT</span>
           <span style={{fontSize:11,color:C.muted}}>{users.length} users</span>
+          <button onClick={()=>setShowAnnounce(true)}
+            style={{marginLeft:'auto',background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:7,color:C.blue,fontSize:12,fontWeight:600,padding:'6px 12px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',gap:5}}>
+            📢 Announce
+          </button>
         </div>
       </div>
+      {announceSent&&(
+        <div style={{margin:'12px 16px',background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:8,padding:'10px 14px',fontSize:13,color:C.green,fontWeight:600}}>
+          ✓ Announcement sent to all users!
+        </div>
+      )}
+      {showAnnounce&&(
+        <div style={{margin:'12px 16px',background:C.surface,border:`1px solid ${C.blueBorder}`,borderRadius:10,padding:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>📢 Send Announcement</div>
+          <input value={announceTitle} onChange={e=>setAnnounceTitle(e.target.value)} placeholder="Title (e.g. App Update)"
+            style={{width:'100%',background:C.surface2,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'8px 12px',fontSize:14,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
+          <textarea value={announceBody} onChange={e=>setAnnounceBody(e.target.value)} placeholder="Message to all users…" rows={3}
+            style={{width:'100%',background:C.surface2,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'8px 12px',fontSize:14,fontFamily:"'Inter',sans-serif",marginBottom:10,resize:'vertical',lineHeight:1.5}}/>
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={sendAnnouncement} disabled={!announceTitle.trim()||!announceBody.trim()}
+              style={{flex:1,background:C.blue,border:'none',borderRadius:7,color:'#fff',padding:'9px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+              Send to All Users
+            </button>
+            <button onClick={()=>{setShowAnnounce(false);setAnnounceTitle('');setAnnounceBody('');}}
+              style={{background:'none',border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,padding:'9px 14px',fontSize:13,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       {resetDone&&(
         <div style={{margin:16,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:10,padding:14}}>
           <div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:6}}>✓ Password Reset</div>
@@ -1163,6 +1205,7 @@ export default function App(){
   const [supportThreads,setSupportThreads]=useState([]);
   const [unreadSupport,setUnreadSupport]=useState(0);
   const supportRealtimeRef=useRef(null);
+  const [lastAnnouncementRef]=useState({id:null});
 
   const myListing=listings.find(l=>l.userId===user?.id)||null;
   const isAdmin=user?.username===ADMIN;
@@ -1341,6 +1384,21 @@ export default function App(){
         }
       }
     }
+    // Check announcements for all users
+    if(!isAdmin){
+      const {data:announcements}=await supabase.from('announcements').select('*').order('created_at',{ascending:false}).limit(1);
+      if(announcements?.length){
+        const latest=announcements[0];
+        if(lastAnnouncementRef.id!==latest.id){
+          if(lastAnnouncementRef.id!==null){
+            newNotifItems.push({type:'announcement',title:latest.title,body:latest.body});
+            playMessageSound();
+          }
+          lastAnnouncementRef.id=latest.id;
+        }
+      }
+    }
+
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
       lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
