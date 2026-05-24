@@ -306,7 +306,7 @@ function AdminResetForm({onBack}){
     const passcode=Math.floor(100000+Math.random()*900000).toString();
     const expireTime=new Date(Date.now()+15*60000);
     const {error:dbErr}=await supabase.from('users').update({reset_token:passcode,reset_expires:expireTime.toISOString()}).eq('username',ADMIN);
-    if(dbErr){setError('Failed to generate code');setLoading(false);return;}
+    if(dbErr){setError('DB error: '+dbErr.message);setLoading(false);return;}
     try{
       await window.emailjs.send(EMAILJS_SERVICE,EMAILJS_TEMPLATE,{
         email:ADMIN_EMAIL,
@@ -315,7 +315,7 @@ function AdminResetForm({onBack}){
       },EMAILJS_KEY);
       setExpires(expireTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}));
       setStep('verify');
-    }catch(e){setError('Failed to send email. Check EmailJS config.');}
+    }catch(e){setError('Email error: '+(e.text||e.message||JSON.stringify(e)));}
     setLoading(false);
   }
 
@@ -342,7 +342,7 @@ function AdminResetForm({onBack}){
     <div style={{marginTop:16,background:C.surface2,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
       <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>🔐 Admin Password Reset</div>
       {step==='send'&&<>
-        <p style={{fontSize:12,color:C.subtle,marginBottom:12,lineHeight:1.5}}>A 6-digit code will be sent to <strong>{ADMIN_EMAIL}</strong></p>
+        <p style={{fontSize:12,color:C.subtle,marginBottom:12,lineHeight:1.5}}>A 6-digit code will be sent to the admin email on file.</p>
         {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
         <button onClick={sendCode} disabled={loading} style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>{loading?'Sending…':'Send Reset Code'}</button>
       </>}
@@ -516,16 +516,7 @@ function AuthScreen({onAuth}){
             </button>
           </div>
         )}
-        {mode==='forgot'&&(
-          <div style={{marginTop:12,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'10px 14px',fontSize:12,color:C.gold,lineHeight:1.5}}>
-            Contact the admin to reset your password. Go to Settings → Contact Admin after logging in, or reach out directly.
-            <div style={{marginTop:8}}>
-              <button onClick={()=>setMode('login')} style={{background:'none',border:'none',color:C.gold,cursor:'pointer',fontSize:12,fontWeight:600,padding:0,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>
-                Back to login
-              </button>
-            </div>
-          </div>
-        )}
+        {mode==='forgot'&&<ForgotPasswordForm onBack={()=>setMode('login')} C={C}/>}
         {mode==='login'&&(
           <div style={{textAlign:'center',marginTop:8,fontSize:11,color:C.muted}}>
             Admin?{' '}
