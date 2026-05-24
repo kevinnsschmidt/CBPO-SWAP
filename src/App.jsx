@@ -423,12 +423,21 @@ Please reset my password and reply with the temporary password.`,
 function TermsScreen({onAccept}){
   const C=useC();
   const [scrolled,setScrolled]=useState(false);
-  const bottomRef=useRef();
+  const [checked,setChecked]=useState(false);
+  const scrollRef=useRef();
 
-  function handleScroll(e){
-    const el=e.target;
-    if(el.scrollHeight-el.scrollTop-el.clientHeight<40) setScrolled(true);
-  }
+  useEffect(()=>{
+    const el=scrollRef.current;
+    if(!el) return;
+    function check(){
+      if(el.scrollHeight-el.scrollTop-el.clientHeight<60) setScrolled(true);
+    }
+    el.addEventListener('scroll',check);
+    check(); // check immediately in case content fits on screen
+    return()=>el.removeEventListener('scroll',check);
+  },[]);
+
+  const canAgree=scrolled&&checked;
 
   return(
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',flexDirection:'column',fontFamily:"'Inter',sans-serif"}}>
@@ -444,7 +453,7 @@ function TermsScreen({onAccept}){
         </div>
       </div>
 
-      <div onScroll={handleScroll} style={{flex:1,overflowY:'auto',padding:'20px 18px'}}>
+      <div ref={scrollRef} style={{flex:1,overflowY:'auto',padding:'20px 18px'}}>
         <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:4}}>Terms of Use & Privacy Policy</div>
         <div style={{fontSize:11,color:C.muted,marginBottom:20}}>Last updated: May 2026</div>
 
@@ -465,17 +474,22 @@ function TermsScreen({onAccept}){
           </div>
         ))}
 
-        <div style={{background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'12px 14px',marginTop:8,marginBottom:24,fontSize:12,color:C.gold,lineHeight:1.6}}>
+        <div style={{background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'12px 14px',marginTop:8,marginBottom:16,fontSize:12,color:C.gold,lineHeight:1.6}}>
           ⚠️ By tapping "I Agree" below, you acknowledge that all swaps must be coordinated through official CBP HR channels and that this tool provides no guarantees of transfer approval.
         </div>
-        <div ref={bottomRef}/>
+        <div onClick={()=>setChecked(!checked)} style={{display:'flex',alignItems:'flex-start',gap:10,cursor:'pointer',marginBottom:20,padding:'12px',background:C.surface,border:`1px solid ${checked?C.greenBorder:C.border}`,borderRadius:8}}>
+          <div style={{width:20,height:20,borderRadius:4,border:`2px solid ${checked?C.green:C.border}`,background:checked?C.green:'transparent',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',marginTop:1}}>
+            {checked&&<Check size={13} color="#fff"/>}
+          </div>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.5}}>I have read and agree to the Terms of Use and Privacy Policy. I understand this is an unofficial tool and all swaps must go through official CBP HR channels.</div>
+        </div>
       </div>
 
       <div style={{padding:'14px 18px',paddingBottom:'max(14px,env(safe-area-inset-bottom))',borderTop:`1px solid ${C.border}`,background:C.surface,flexShrink:0}}>
-        {!scrolled&&<div style={{fontSize:11,color:C.muted,textAlign:'center',marginBottom:10}}>Scroll down to read all terms before agreeing</div>}
-        <button onClick={onAccept} disabled={!scrolled}
-          style={{width:'100%',background:scrolled?C.green:'rgba(100,100,100,0.2)',border:'none',borderRadius:10,color:'#fff',padding:'14px',fontSize:15,fontWeight:700,cursor:scrolled?'pointer':'default',fontFamily:"'Inter',sans-serif",transition:'background 0.2s'}}>
-          {scrolled?'I Agree — Enter App':'Read All Terms to Continue'}
+        {!scrolled&&<div style={{fontSize:11,color:C.muted,textAlign:'center',marginBottom:10}}>Scroll down to read all terms</div>}
+        <button onClick={onAccept} disabled={!canAgree}
+          style={{width:'100%',background:canAgree?C.green:'rgba(100,100,100,0.2)',border:'none',borderRadius:10,color:canAgree?'#fff':C.muted,padding:'14px',fontSize:15,fontWeight:700,cursor:canAgree?'pointer':'default',fontFamily:"'Inter',sans-serif",transition:'background 0.2s'}}>
+          {!scrolled?'Scroll Down to Continue':!checked?'Check the Box to Continue':'I Agree — Enter App'}
         </button>
       </div>
     </div>
