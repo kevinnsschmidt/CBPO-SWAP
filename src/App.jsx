@@ -110,7 +110,7 @@ const POLL_MS = 15 * 1000;
 const ADMIN = 'kevinsschmidt';
 const ADMIN_EMAIL = 'kevinsschmidt@outlook.com';
 const EMAILJS_SERVICE = 'service_ub5lnea';
-const EMAILJS_TEMPLATE = 'template_j7mzt8h';
+const EMAILJS_TEMPLATE = 'template_f32dmhv';
 const EMAILJS_KEY = '8_ca3_prUvUNV0uvd';
 
 const uuid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -614,7 +614,7 @@ function WelcomeScreen({user,onPost,onBrowse}){
   );
 }
 
-function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin,isAdmin}){
+function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin,isAdmin,onChangePassword}){
   const C=useC();
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,display:'flex',flexDirection:'column',background:C.bg,fontFamily:"'Inter',sans-serif"}}>
@@ -655,6 +655,11 @@ function SettingsPanel({user,onClose,dark,onToggleDark,onLogout,onContactAdmin,i
           <span style={{fontSize:14,fontWeight:600,color:C.blue}}>Contact Admin</span>
         </button>
         )}
+        <button onClick={onChangePassword}
+          style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:'14px',display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:"'Inter',sans-serif",marginBottom:12}}>
+          <Lock size={16} color={C.muted}/>
+          <span style={{fontSize:14,fontWeight:600,color:C.muted}}>Change Password</span>
+        </button>
         <button onClick={onLogout}
           style={{width:'100%',background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:10,padding:'14px',display:'flex',alignItems:'center',justifyContent:'center',gap:8,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
           <LogOut size={16} color={C.red}/>
@@ -1642,7 +1647,7 @@ export default function App(){
     </ThemeCtx.Provider>
   );
   if(chatSession) return(<ThemeCtx.Provider value={C}><ChatPanel chainKey={chatSession.chainKey} officers={chatSession.officers} messages={chatMessages} loading={chatLoading} currentUser={user} myListing={myListing} onSend={sendMessage} onClose={closeChat}/></ThemeCtx.Provider>);
-  if(settingsPanel) return(<ThemeCtx.Provider value={C}><SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout} onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}} isAdmin={isAdmin}/></ThemeCtx.Provider>);
+  if(settingsPanel) return(<ThemeCtx.Provider value={C}><SettingsPanel user={user} onClose={()=>setSettingsPanel(false)} dark={dark} onToggleDark={toggleDark} onLogout={handleLogout} onContactAdmin={()=>{setSettingsPanel(false);openSupportChat('support-'+user.id,user.username);}} isAdmin={isAdmin} onChangePassword={()=>{setSettingsPanel(false);setShowChangePassword(true);}}/></ThemeCtx.Provider>);
   if(notifPanel) return(<ThemeCtx.Provider value={C}><NotifPanel notifs={notifs} onClose={()=>setNotifPanel(false)} onMarkAllRead={markAllRead} onClearAll={clearAllNotifs} notifPerm={notifPerm} onRequestPerm={requestNotifPermission} onOpenChat={ck=>{setNotifPanel(false);setPendingChat(ck);}}/></ThemeCtx.Provider>);
   if(adminPanel) return(<ThemeCtx.Provider value={C}><AdminPanel onClose={()=>setAdminPanel(false)} currentUser={user}/></ThemeCtx.Provider>);
   if(supportSession) return(<ThemeCtx.Provider value={C}><SupportChat session={supportSession} messages={supportMessages} loading={supportLoading} currentUser={user} isAdmin={isAdmin} onSend={sendSupportMessage} onClose={closeSupportChat}/></ThemeCtx.Provider>);
@@ -1756,7 +1761,7 @@ export default function App(){
                 <div style={{fontSize:13}}>{myListing?"We'll notify you when your listing gets a match":'Post your swap to get matched automatically'}</div>
               </div>
             ):sortByPriority([...chains.two,...chains.three]).filter(officers=>
-              isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
+              isAdmin||(myListing&&officers.some(o=>o.id===myListing.id))
             ).length===0?(
               <div style={{textAlign:'center',padding:60,color:C.muted}}>
                 <div style={{fontSize:36,marginBottom:10}}>🔗</div>
@@ -1766,12 +1771,10 @@ export default function App(){
             ):(
               <>
                 {sortByPriority([...chains.two,...chains.three]).filter(officers=>
-                  isAdmin||!myListing||(myListing&&officers.some(o=>o.id===myListing.id))
+                  isAdmin||(myListing&&officers.some(o=>o.id===myListing.id))
                 ).map((officers,i)=>{
                   const ck=getChainKey(officers);
                   const type=officers.length;
-                  // Double-check user is in this match
-                  if(!isAdmin&&myListing&&!officers.some(o=>o.id===myListing.id)) return null;
                   return<MatchCard key={ck} officers={officers} type={type} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
                     priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
                     onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
