@@ -366,6 +366,70 @@ function AdminResetForm({onBack}){
   );
 }
 
+// ── Forgot Password Form ─────────────────────────────────────────────────────
+function ForgotPasswordForm({onBack,C}){
+  const [username,setUsername]=useState('');
+  const [email,setEmail]=useState('');
+  const [sent,setSent]=useState(false);
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  async function submit(){
+    if(!username.trim()||!email.trim()){setError('Please fill in both fields');return;}
+    setLoading(true);setError('');
+    // Check user exists
+    const {data:user}=await supabase.from('users').select('id,username').eq('username',username.trim().toLowerCase()).maybeSingle();
+    if(!user){setError('Username not found');setLoading(false);return;}
+    // Send as support message from a system chain
+    const chainKey='support-'+user.id;
+    const msgId=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    await supabase.from('messages').insert([{
+      id:msgId,
+      chain_key:chainKey,
+      sender_id:user.id,
+      sender_name:user.username,
+      text:`🔐 PASSWORD RESET REQUEST
+Username: ${user.username}
+Contact email: ${email.trim()}
+
+Please reset my password and reply with the temporary password.`,
+      created_at:new Date().toISOString(),
+    }]);
+    setSent(true);
+    setLoading(false);
+  }
+
+  if(sent) return(
+    <div style={{marginTop:12,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:8,padding:'14px',fontSize:13,color:C.green,lineHeight:1.5}}>
+      ✓ Reset request sent! The admin will reply with a temporary password shortly.
+      <div style={{marginTop:10}}>
+        <button onClick={onBack} style={{background:'none',border:'none',color:C.blue,cursor:'pointer',fontSize:12,fontWeight:600,padding:0,fontFamily:"'Inter',sans-serif",textDecoration:'underline'}}>
+          Back to login
+        </button>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{marginTop:12,background:C.surface2,border:`1px solid ${C.border}`,borderRadius:8,padding:'14px'}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>🔐 Password Reset Request</div>
+      <div style={{fontSize:12,color:C.subtle,marginBottom:12,lineHeight:1.5}}>Enter your username and an email where we can send your temporary password.</div>
+      <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Your username"
+        style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:14,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
+      <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Your email address"
+        style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,padding:'9px 12px',fontSize:14,fontFamily:"'Inter',sans-serif",marginBottom:8}}/>
+      {error&&<div style={{fontSize:12,color:C.red,marginBottom:8}}>{error}</div>}
+      <button onClick={submit} disabled={loading}
+        style={{width:'100%',background:C.green,border:'none',borderRadius:7,color:'#fff',padding:'10px',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif",marginBottom:8}}>
+        {loading?'Sending…':'Send Reset Request'}
+      </button>
+      <button onClick={onBack} style={{width:'100%',background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:12,fontFamily:"'Inter',sans-serif"}}>
+        Back to login
+      </button>
+    </div>
+  );
+}
+
 // ── Auth Screen ───────────────────────────────────────────────────────────────
 function AuthScreen({onAuth}){
   const C=useC();
