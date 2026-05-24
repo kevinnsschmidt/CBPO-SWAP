@@ -105,7 +105,6 @@ const PORTS = [
   'Tucson, AZ','Nogales, AZ','Douglas, AZ','Lukeville, AZ','Naco, AZ','Sasabe, AZ','Yuma, AZ',
 ].sort();
 
-const LOCK_MS = 48 * 60 * 60 * 1000;
 const POLL_MS = 15 * 1000;
 const ADMIN = 'kevinsschmidt';
 const ADMIN_EMAIL = 'kevinsschmidt@outlook.com';
@@ -145,15 +144,7 @@ function dbToListing(row){
     status:row.status||'', userId:row.user_id||'', createdAt:row.created_at,
   };
 }
-function dbToLocks(rows){
-  const locks={},now=Date.now();
-  for(const r of rows){
-    if(new Date(r.expires_at).getTime()<=now) continue;
-    if(!locks[r.chain_key]) locks[r.chain_key]={};
-    locks[r.chain_key][r.officer_id]={lockedAt:r.locked_at,expiresAt:r.expires_at};
-  }
-  return locks;
-}
+
 function computeChains(ls){
   const two=[],threeKeys=new Set(),three=[];
   for(let i=0;i<ls.length;i++)
@@ -208,8 +199,6 @@ function playMessageSound(){
 }
 const NOTIF_META={
   match_found:{icon:'🔗',color:'gold'},
-  lock_placed:{icon:'🔒',color:'blue'},
-  all_locked:{icon:'✅',color:'green'},
   lock_expired:{icon:'⏰',color:'muted'},
   new_message:{icon:'💬',color:'purple'},
   announcement:{icon:'📢',color:'blue'},
@@ -820,24 +809,17 @@ function ChatPanel({chainKey,officers,messages,loading,currentUser,myListing,onS
   );
 }
 
-function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,currentUser,priorityRank,unreadMsgs=0,onOpenChat,isAdmin=false}){
+function MatchCard({officers,type,myListing,currentUser,priorityRank,unreadMsgs=0,onOpenChat,isAdmin=false}){
   const C=useC();
-  const now=Date.now();
-  const lockState=officers.map(o=>{
-    const lock=chainLocks[o.id];
-    const active=lock&&new Date(lock.expiresAt).getTime()>now;
-    return{officer:o,lock,active};
-  });
-  const lockedCount=lockState.filter(s=>s.active).length;
-  const allLocked=lockedCount===officers.length;
   const isMyMatch=myListing&&officers.some(o=>o.id===myListing.id);
   const isParticipant=isMyMatch;
   const rankColor=priorityRank===1?C.green:priorityRank===2?C.gold:C.muted;
   const rankBorder=priorityRank===1?C.greenBorder:priorityRank===2?C.goldBorder:C.border;
 
   return(
-    <div className="fade-in" style={{background:allLocked?C.greenDim:C.surface,border:`1px solid ${allLocked?C.greenBorder:isMyMatch?C.blueBorder:C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
-      <div style={{padding:'8px 12px',borderBottom:`1px solid ${allLocked?C.greenBorder:C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+    <div className="fade-in" style={{background:C.surface,border:`1px solid ${isMyMatch?C.blueBorder:C.border}`,borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+      {/* Header */}
+      <div style={{padding:'8px 12px',borderBottom:`1px solid ${C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           <Link2 size={10} color={type===3?C.gold:C.green}/>
           <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:type===3?C.gold:C.green}}>
@@ -845,30 +827,20 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
           </span>
           {isMyMatch&&<span style={{fontSize:9,fontWeight:700,color:C.blue,background:C.blueDim,border:`1px solid ${C.blueBorder}`,borderRadius:3,padding:'1px 4px'}}>YOURS</span>}
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:6}}>
-          <span style={{fontSize:9,fontWeight:800,color:rankColor,border:`1px solid ${rankBorder}`,borderRadius:4,padding:'1px 6px'}}>
-            {priorityRank===1?'⭐ #1':`#${priorityRank}`}
-          </span>
-          <span style={{fontSize:10,color:allLocked?C.green:C.muted}}>{lockedCount}/{officers.length} 🔒</span>
-        </div>
+        <span style={{fontSize:9,fontWeight:800,color:rankColor,border:`1px solid ${rankBorder}`,borderRadius:4,padding:'1px 6px'}}>
+          {priorityRank===1?'⭐ #1':`#${priorityRank}`}
+        </span>
       </div>
-      {allLocked&&(
-        <div style={{padding:'8px 12px',background:C.greenDim,borderBottom:`1px solid ${C.greenBorder}`,display:'flex',alignItems:'center',gap:8}}>
-          <span style={{fontSize:16}}>✅</span>
-          <div style={{fontSize:12,fontWeight:700,color:C.green}}>All parties locked in — coordinate in chat then initiate HR</div>
-        </div>
-      )}
+
+      {/* Officers */}
       <div style={{display:'flex',alignItems:'stretch',padding:'12px',overflowX:type===3?'auto':'visible',gap:8}}>
-        {lockState.map(({officer,lock,active},i)=>{
-          const countdown=active?formatCountdown(lock.expiresAt):null;
-          const soonExpire=active&&(new Date(lock.expiresAt).getTime()-now)<4*3600000;
-          const isMyRow=currentUser&&officer.userId===currentUser.id;
-          const isLast=i===lockState.length-1;
+        {officers.map((officer,i)=>{
+          const isLast=i===officers.length-1;
           return(
             <div key={officer.id} style={{display:'flex',alignItems:'center',flex:1}}>
-              <div style={{flex:1,minWidth:0,background:active?C.greenDim:C.surface2,border:`1px solid ${active?C.greenBorder:'transparent'}`,borderRadius:8,padding:'10px 12px'}}>
+              <div style={{flex:1,minWidth:0,background:C.surface2,borderRadius:8,padding:'10px 12px'}}>
                 <div style={{display:'flex',alignItems:'flex-start',gap:5,marginBottom:4,flexWrap:'wrap'}}>
-                  <div style={{width:6,height:6,borderRadius:'50%',background:active?C.green:C.muted,flexShrink:0,marginTop:3}}/>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:C.green,flexShrink:0,marginTop:3}}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:12,fontWeight:700,color:C.red,lineHeight:1.3}}>{officer.currentPort.split(',')[0]}</div>
                     <div style={{display:'flex',alignItems:'center',gap:3,marginTop:2}}>
@@ -883,25 +855,6 @@ function MatchCard({officers,type,chainLocks={},onLock,onUnlock,myListing,curren
                   {officer.gsLevel&&<span style={{fontSize:9,fontWeight:700,color:C.purple}}>{officer.gsLevel}</span>}
                   {officer.status&&<span style={{fontSize:9,fontWeight:700,color:C.gold}}>{officer.status}</span>}
                 </div>
-                {active?(
-                  <div style={{marginTop:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:4}}>
-                      <Lock size={9} color={soonExpire?C.gold:C.green}/>
-                      <span style={{fontSize:10,color:soonExpire?C.gold:C.green,fontWeight:500}}>{countdown||'Expiring…'}</span>
-                    </div>
-                    {isMyRow&&<button onClick={()=>{if(window.confirm('Release your lock?'))onUnlock(officer.id);}}
-                      style={{background:'none',border:`1px solid ${C.border}`,borderRadius:4,color:C.muted,fontSize:10,padding:'2px 7px',cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
-                      Release
-                    </button>}
-                  </div>
-                ):isMyRow?(
-                  <button onClick={()=>{if(window.confirm('Lock in? Hold expires in 48 hours.'))onLock(officer.id);}}
-                    style={{width:'100%',marginTop:6,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:5,color:C.green,fontSize:10,fontWeight:600,padding:'5px',cursor:'pointer',fontFamily:"'Inter',sans-serif",display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
-                    <Lock size={9}/>Lock In
-                  </button>
-                ):(
-                  <div style={{marginTop:6,fontSize:10,color:C.muted}}>Awaiting confirmation…</div>
-                )}
               </div>
               {!isLast&&(
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'0 6px',flexShrink:0,gap:4}}>
@@ -1292,7 +1245,6 @@ export default function App(){
   const [screen,setScreen]=useState('main');
   const [tab,setTab]=useState('board');
   const [listings,setListings]=useState([]);
-  const [locks,setLocks]=useState({});
   const [chains,setChains]=useState({two:[],three:[]});
   const [queuePos,setQueuePos]=useState({});
   const [loading,setLoading]=useState(true);
@@ -1302,7 +1254,7 @@ export default function App(){
   const [notifPanel,setNotifPanel]=useState(false);
   const [settingsPanel,setSettingsPanel]=useState(false);
   const [bellRing,setBellRing]=useState(false);
-  const lastRef=useRef({chainKeys:[],lockCounts:{},allLockedKeys:[],msgCounts:{},supportMsgCount:0});
+  const lastRef=useRef({chainKeys:[],msgCounts:{},supportMsgCount:0});
   const [chatSession,setChatSession]=useState(null);
   const [chatMessages,setChatMessages]=useState([]);
   const [chatLoading,setChatLoading]=useState(false);
@@ -1351,21 +1303,16 @@ export default function App(){
     if(!user) return;
     const ch=supabase.channel('board')
       .on('postgres_changes',{event:'*',schema:'public',table:'listings'},()=>fetchListings())
-      .on('postgres_changes',{event:'*',schema:'public',table:'locks'},()=>fetchLocks())
       .subscribe();
     return()=>supabase.removeChannel(ch);
   },[user]);
 
   async function init(){
     setLoading(true);
-    const [listRes,lockRes]=await Promise.all([
-      supabase.from('listings').select('*').order('created_at'),
-      supabase.from('locks').select('*').gt('expires_at',new Date().toISOString()),
-    ]);
-    const ls=(listRes.data||[]).map(dbToListing);
-    const lk=dbToLocks(lockRes.data||[]);
+    const {data:listData}=await supabase.from('listings').select('*').order('created_at');
+    const ls=(listData||[]).map(dbToListing);
+    const lk={};
     setListings(ls);
-    setLocks(lk);
     setLoading(false);
     if(user){
       const myListing=ls.find(l=>l.userId===user.id);
@@ -1381,8 +1328,6 @@ export default function App(){
         }
         lastRef.current={
           chainKeys:myChains.map(getChainKey),
-          lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
-          allLockedKeys:myChains.filter(o=>{const ck=getChainKey(o);return Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length===o.length;}).map(getChainKey),
           msgCounts,
           supportThreadCount:0,
         };
@@ -1390,7 +1335,7 @@ export default function App(){
     }
   }
   async function fetchListings(){const {data}=await supabase.from('listings').select('*').order('created_at');setListings((data||[]).map(dbToListing));}
-  async function fetchLocks(){const {data}=await supabase.from('locks').select('*').gt('expires_at',new Date().toISOString());setLocks(dbToLocks(data||[]));}
+
 
   async function checkUnread(allChains,myId){
     const myChains=allChains.filter(officers=>officers.some(o=>o.id===myId));
@@ -1411,8 +1356,7 @@ export default function App(){
     if(!myListing) return;
     const {data:listData}=await supabase.from('listings').select('*').order('created_at');
     const ls=(listData||[]).map(dbToListing);
-    const {data:lockData}=await supabase.from('locks').select('*').gt('expires_at',new Date().toISOString());
-    const lk=dbToLocks(lockData||[]);
+    const lk={};
     const newChains=computeChains(ls);
     const now=Date.now(),myId=myListing.id;
     const myChains=[...newChains.two,...newChains.three].filter(o=>o.some(x=>x.id===myId));
@@ -1420,14 +1364,10 @@ export default function App(){
     const newNotifItems=[];
     for(const officers of myChains){
       const ck=getChainKey(officers);
-      const currActive=Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now);
-      const currCount=currActive.length;
-      const prevCount=last.lockCounts?.[ck]||0;
       const wasKnown=last.chainKeys?.includes(ck);
       const iAmInChain=officers.some(o=>o.id===myListing?.id);
       if(!wasKnown&&iAmInChain)newNotifItems.push({type:'match_found',title:'New match found!',body:`Your listing matched a ${officers.length}-way swap. Check the Matches tab.`});
-      if(wasKnown&&currCount>prevCount&&iAmInChain)newNotifItems.push({type:'lock_placed',title:'Match updated',body:`${currCount}/${officers.length} officers confirmed.`});
-      if(currCount===officers.length&&!last.allLockedKeys?.includes(ck)&&iAmInChain)newNotifItems.push({type:'all_locked',title:'All parties confirmed! 🎉',body:'Everyone is ready. Open the match chat to coordinate.'});
+
       const {data:msgs}=await supabase.from('messages').select('*').eq('chain_key',ck).order('created_at');
       if(msgs?.length){
         const prev=last.msgCounts?.[ck]||0;
@@ -1514,8 +1454,6 @@ export default function App(){
 
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
-      lockCounts:Object.fromEntries(myChains.map(o=>{const ck=getChainKey(o);return[ck,Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length];})),
-      allLockedKeys:myChains.filter(o=>{const ck=getChainKey(o);return Object.values(lk[ck]||{}).filter(l=>new Date(l.expiresAt).getTime()>now).length===o.length;}).map(getChainKey),
       msgCounts:last.msgCounts||{},
       supportThreadCount:lastRef.current.supportThreadCount||0,
     };
@@ -1549,12 +1487,7 @@ export default function App(){
     await supabase.from('messages').insert([msg]);
     await supabase.from('read_receipts').upsert({chain_key:chatSession.chainKey,user_id:user.id,read_at:new Date().toISOString()});
   }
-  async function lockOfficer(ck,oid){
-    const now=new Date(),expires=new Date(now.getTime()+LOCK_MS);
-    await supabase.from('locks').upsert({chain_key:ck,officer_id:oid,locked_at:now.toISOString(),expires_at:expires.toISOString()});
-    await fetchLocks();
-  }
-  async function unlockOfficer(ck,oid){await supabase.from('locks').delete().eq('chain_key',ck).eq('officer_id',oid);await fetchLocks();}
+
   async function removeListing(id){await supabase.from('listings').delete().eq('id',id);}
 
   async function openSupportChat(chainKey,username){
@@ -1775,9 +1708,8 @@ export default function App(){
                 ).map((officers,i)=>{
                   const ck=getChainKey(officers);
                   const type=officers.length;
-                  return<MatchCard key={ck} officers={officers} type={type} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
+                  return<MatchCard key={ck} officers={officers} type={type} myListing={myListing} currentUser={user}
                     priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
-                    onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
                     onOpenChat={()=>openChat(ck,officers)}/>;
                 })}
               </>
