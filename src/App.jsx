@@ -430,6 +430,58 @@ Please reset my password and reply with the temporary password.`,
   );
 }
 
+// ── Change Password Screen ────────────────────────────────────────────────────
+function ChangePasswordScreen({user,onDone,onSkip}){
+  const C=useC();
+  const [newPass,setNewPass]=useState('');
+  const [confirm,setConfirm]=useState('');
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [done,setDone]=useState(false);
+
+  async function submit(){
+    if(newPass.length<6){setError('Min 6 characters');return;}
+    if(newPass!==confirm){setError('Passwords do not match');return;}
+    setLoading(true);setError('');
+    const hash=await hashPassword(user.username,newPass);
+    await supabase.from('users').update({password_hash:hash}).eq('id',user.id);
+    setDone(true);setLoading(false);
+    setTimeout(()=>onDone(),1500);
+  }
+
+  return(
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:24,fontFamily:"'Inter',sans-serif"}}>
+      <style>{css}</style>
+      <div style={{width:'100%',maxWidth:360,background:C.surface,borderRadius:14,padding:24,border:`1px solid ${C.border}`}}>
+        <div style={{fontSize:20,marginBottom:4}}>🔐</div>
+        <div style={{fontWeight:700,fontSize:16,color:C.text,marginBottom:6}}>Change Your Password</div>
+        <div style={{fontSize:13,color:C.muted,marginBottom:20,lineHeight:1.5}}>You logged in with a temporary password. Please set a new permanent password.</div>
+        {done?(
+          <div style={{color:C.green,fontWeight:600,fontSize:14,textAlign:'center'}}>✓ Password updated!</div>
+        ):(
+          <>
+            <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)}
+              placeholder="New password (min 6 characters)"
+              style={{width:'100%',background:C.surface2,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,padding:'10px 14px',fontSize:15,fontFamily:"'Inter',sans-serif",marginBottom:10}}/>
+            <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)}
+              placeholder="Confirm new password"
+              style={{width:'100%',background:C.surface2,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,padding:'10px 14px',fontSize:15,fontFamily:"'Inter',sans-serif",marginBottom:10}}/>
+            {error&&<div style={{fontSize:12,color:C.red,marginBottom:10}}>{error}</div>}
+            <button onClick={submit} disabled={loading}
+              style={{width:'100%',background:C.green,border:'none',borderRadius:8,color:'#fff',padding:'13px',fontSize:15,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",marginBottom:10}}>
+              {loading?'Saving…':'Set New Password'}
+            </button>
+            <button onClick={onSkip}
+              style={{width:'100%',background:'none',border:'none',color:C.muted,fontSize:13,cursor:'pointer',fontFamily:"'Inter',sans-serif"}}>
+              Skip for now
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Auth Screen ───────────────────────────────────────────────────────────────
 function AuthScreen({onAuth}){
   const C=useC();
@@ -448,7 +500,7 @@ function AuthScreen({onAuth}){
       if(mode==='login'){
         const {data,error:err}=await supabase.from('users').select('*').eq('username',username.trim().toLowerCase()).eq('password_hash',hash).maybeSingle();
         if(err||!data){setError('Invalid username or password');setLoading(false);return;}
-        onAuth(data);
+        onAuth(data,password);
       } else {
         const {data:existing}=await supabase.from('users').select('id').eq('username',username.trim().toLowerCase()).maybeSingle();
         if(existing){setError('Username already taken');setLoading(false);return;}
@@ -1253,6 +1305,7 @@ export default function App(){
   const [pendingChat,setPendingChat]=useState(null);
   const realtimeRef=useRef(null);
   const [supportSession,setSupportSession]=useState(null);
+  const [showChangePassword,setShowChangePassword]=useState(false);
   const [supportMessages,setSupportMessages]=useState([]);
   const [supportLoading,setSupportLoading]=useState(false);
   const [supportInbox,setSupportInbox]=useState(false);
@@ -1544,7 +1597,12 @@ export default function App(){
     await supabase.from('messages').delete().eq('chain_key',chainKey);
     setSupportThreads(prev=>prev.filter(t=>t.chainKey!==chainKey));
   }
-  function handleLogin(u){setUser(u);localStorage.setItem('cbpo-user',JSON.stringify(u));}
+  function handleLogin(u,rawPassword){
+    setUser(u);
+    localStorage.setItem('cbpo-user',JSON.stringify(u));
+    // If password looks like a temp password (cbpo + 4 digits), prompt to change
+    if(rawPassword&&/^cbpo\d{4}$/.test(rawPassword)) setShowChangePassword(true);
+  }
   function handleLogout(){setUser(null);localStorage.removeItem('cbpo-user');setListings([]);setLocks({});setNotifs([]);setSettingsPanel(false);}
   function toggleDark(){const nd=!dark;setDark(nd);localStorage.setItem('cbpo-dark',String(nd));}
   function markAllRead(){const u=notifs.map(n=>({...n,read:true}));setNotifs(u);localStorage.setItem('cbpo-notifs',JSON.stringify(u));}
@@ -1560,6 +1618,11 @@ export default function App(){
   const totalUnreadChat=Object.values(unreadChats).reduce((a,b)=>a+b,0);
 
   if(!user) return(<ThemeCtx.Provider value={C}><AuthScreen onAuth={handleLogin}/></ThemeCtx.Provider>);
+  if(showChangePassword) return(
+    <ThemeCtx.Provider value={C}>
+      <ChangePasswordScreen user={user} onDone={()=>setShowChangePassword(false)} onSkip={()=>setShowChangePassword(false)}/>
+    </ThemeCtx.Provider>
+  );
   if(!myListing&&screen!=='main'&&screen!=='post'){return(<ThemeCtx.Provider value={C}><WelcomeScreen user={user} onPost={()=>setScreen('post')} onBrowse={()=>setScreen('main')}/></ThemeCtx.Provider>);}
   if(screen==='post'||screen==='edit') return(
     <ThemeCtx.Provider value={C}>
@@ -1707,6 +1770,8 @@ export default function App(){
                 ).map((officers,i)=>{
                   const ck=getChainKey(officers);
                   const type=officers.length;
+                  // Double-check user is in this match
+                  if(!isAdmin&&myListing&&!officers.some(o=>o.id===myListing.id)) return null;
                   return<MatchCard key={ck} officers={officers} type={type} chainLocks={locks[ck]||{}} myListing={myListing} currentUser={user}
                     priorityRank={i+1} unreadMsgs={unreadChats[ck]||0} isAdmin={isAdmin}
                     onLock={oid=>lockOfficer(ck,oid)} onUnlock={oid=>unlockOfficer(ck,oid)}
