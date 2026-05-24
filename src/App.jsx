@@ -64,7 +64,7 @@ const PORTS = [
   'Texas City, TX','Freeport, TX','Beaumont, TX','Sabine, TX','Orange, TX','Port Lavaca, TX',
   // LAREDO Field Office
   'Laredo, TX','Laredo, TX (Colombia Bridge)','Eagle Pass, TX','Del Rio, TX',
-  'Roma, TX','Rio Grande City, TX','Hidalgo/Pharr, TX','McAllen, TX','Brownsville, TX',
+  'Roma, TX','Rio Grande City, TX','Hidalgo/Pharr, TX','McAllen, TX','Brownsville, TX','Progreso, TX',
   // LOS ANGELES Field Office
   'Los Angeles, CA (LAX)','Los Angeles, CA (Seaport)','Long Beach, CA','Las Vegas, NV',
   'Ontario, CA','Phoenix, AZ','Denver, CO','Salt Lake City, UT','Reno, NV',
@@ -415,6 +415,69 @@ Please reset my password and reply with the temporary password.`,
       <button onClick={onBack} style={{width:'100%',background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:12,fontFamily:"'Inter',sans-serif"}}>
         Back to login
       </button>
+    </div>
+  );
+}
+
+// ── Terms Screen ──────────────────────────────────────────────────────────────
+function TermsScreen({onAccept}){
+  const C=useC();
+  const [scrolled,setScrolled]=useState(false);
+  const bottomRef=useRef();
+
+  function handleScroll(e){
+    const el=e.target;
+    if(el.scrollHeight-el.scrollTop-el.clientHeight<40) setScrolled(true);
+  }
+
+  return(
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',flexDirection:'column',fontFamily:"'Inter',sans-serif"}}>
+      <style>{css}</style>
+      <div style={{height:'env(safe-area-inset-top)',background:C.surface}}/>
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+        <div style={{background:'#000',borderRadius:8,width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Shield size={16} color="silver"/>
+        </div>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:800,letterSpacing:'0.06em',color:C.text}}>CBPO SWAP BOARD</div>
+          <div style={{fontSize:10,color:C.muted}}>Terms of Use & Privacy Policy</div>
+        </div>
+      </div>
+
+      <div onScroll={handleScroll} style={{flex:1,overflowY:'auto',padding:'20px 18px'}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:4}}>Terms of Use & Privacy Policy</div>
+        <div style={{fontSize:11,color:C.muted,marginBottom:20}}>Last updated: May 2026</div>
+
+        {[
+          {title:'1. Not an Official CBP Tool',body:'CBPO Swap Board is an independent, unofficial peer-to-peer platform. It is not affiliated with, endorsed by, or connected to U.S. Customs and Border Protection (CBP), the Department of Homeland Security (DHS), or any government agency. Use of this app does not constitute an official swap request or transfer application.'},
+          {title:'2. No Guarantee of Swap Approval',body:'This app helps you find potential swap partners. It does not guarantee that any swap will be approved. All duty station transfers must be formally coordinated and approved through official CBP HR channels. The app has no authority over assignment decisions.'},
+          {title:'3. User Conduct',body:'By using this app you agree to: provide accurate information in your listing, use the chat feature respectfully, maintain one account per person, and not post false, misleading, or inappropriate content. Violations may result in immediate removal without notice.'},
+          {title:'4. Contact Information',body:'Your contact information (email, phone, or Teams handle) is only visible to officers whose listings match yours. It is never displayed publicly on the board. Do not post sensitive information such as badge numbers, SSNs, or personal addresses.'},
+          {title:'5. Privacy & Data',body:'Your account data (username, listing details, and messages) is stored securely. We do not sell, share, or distribute your personal information to third parties. Chat messages between matched officers are private and only visible to participants and the app administrator.'},
+          {title:'6. Admin Rights',body:'The app administrator reserves the right to remove any user, listing, or message at any time without notice, particularly in cases of misconduct, false information, or misuse of the platform.'},
+          {title:'7. Account Deletion',body:'You may request deletion of your account and associated data at any time by contacting the admin through the app\'s Support feature.'},
+          {title:'8. Disclaimer of Liability',body:'This app is provided "as is" without warranties of any kind. The developer is not responsible for any employment outcomes, swap failures, HR decisions, or consequences arising from use of this platform. Use at your own discretion.'},
+          {title:'9. Changes to Terms',body:'These terms may be updated at any time. Continued use of the app after changes constitutes acceptance of the updated terms. Major changes will be announced via the in-app notification system.'},
+        ].map(s=>(
+          <div key={s.title} style={{marginBottom:18}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:5}}>{s.title}</div>
+            <div style={{fontSize:13,color:C.subtle,lineHeight:1.7}}>{s.body}</div>
+          </div>
+        ))}
+
+        <div style={{background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'12px 14px',marginTop:8,marginBottom:24,fontSize:12,color:C.gold,lineHeight:1.6}}>
+          ⚠️ By tapping "I Agree" below, you acknowledge that all swaps must be coordinated through official CBP HR channels and that this tool provides no guarantees of transfer approval.
+        </div>
+        <div ref={bottomRef}/>
+      </div>
+
+      <div style={{padding:'14px 18px',paddingBottom:'max(14px,env(safe-area-inset-bottom))',borderTop:`1px solid ${C.border}`,background:C.surface,flexShrink:0}}>
+        {!scrolled&&<div style={{fontSize:11,color:C.muted,textAlign:'center',marginBottom:10}}>Scroll down to read all terms before agreeing</div>}
+        <button onClick={onAccept} disabled={!scrolled}
+          style={{width:'100%',background:scrolled?C.green:'rgba(100,100,100,0.2)',border:'none',borderRadius:10,color:'#fff',padding:'14px',fontSize:15,fontWeight:700,cursor:scrolled?'pointer':'default',fontFamily:"'Inter',sans-serif",transition:'background 0.2s'}}>
+          {scrolled?'I Agree — Enter App':'Read All Terms to Continue'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1242,6 +1305,7 @@ export default function App(){
   const [dark,setDark]=useState(()=>localStorage.getItem('cbpo-dark')==='true');
   const C=dark?DARK:LIGHT;
   const [user,setUser]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-user'));}catch{return null;}});
+  const [termsAccepted,setTermsAccepted]=useState(()=>localStorage.getItem('cbpo-terms')==='true');
   const [screen,setScreen]=useState('main');
   const [tab,setTab]=useState('board');
   const [listings,setListings]=useState([]);
@@ -1353,12 +1417,17 @@ export default function App(){
   }
 
   async function poll(){
+    // Fix 1: Check if current user still exists
+    if(user){
+      const {data:userCheck}=await supabase.from('users').select('id').eq('id',user.id).maybeSingle();
+      if(!userCheck){handleLogout();return;}
+    }
     if(!myListing) return;
     const {data:listData}=await supabase.from('listings').select('*').order('created_at');
     const ls=(listData||[]).map(dbToListing);
     const lk={};
     const newChains=computeChains(ls);
-    const now=Date.now(),myId=myListing.id;
+    const now=Date.now(),myId=myListing.id,myUserId=user.id;
     const myChains=[...newChains.two,...newChains.three].filter(o=>o.some(x=>x.id===myId));
     const last=lastRef.current;
     const newNotifItems=[];
@@ -1373,7 +1442,7 @@ export default function App(){
         const prev=last.msgCounts?.[ck]||0;
         if(msgs.length>prev&&prev>0){
           const latest=msgs[msgs.length-1];
-          if(latest.sender_id!==myId&&(!chatSession||chatSession.chainKey!==ck)){
+          if(latest.sender_id!==myUserId&&(!chatSession||chatSession.chainKey!==ck)){
             newNotifItems.push({type:'new_message',title:'New message in your match',body:`${latest.sender_name}: ${latest.text.slice(0,80)}${latest.text.length>80?'…':''}`,chainKey:ck});
             setUnreadChats(prev=>({...prev,[ck]:(prev[ck]||0)+msgs.length-prev}));
             playMessageSound();
@@ -1556,6 +1625,11 @@ export default function App(){
   const totalUnreadChat=Object.values(unreadChats).reduce((a,b)=>a+b,0);
 
   if(!user) return(<ThemeCtx.Provider value={C}><AuthScreen onAuth={handleLogin}/></ThemeCtx.Provider>);
+  if(!termsAccepted) return(
+    <ThemeCtx.Provider value={C}>
+      <TermsScreen onAccept={()=>{localStorage.setItem('cbpo-terms','true');setTermsAccepted(true);}}/>
+    </ThemeCtx.Provider>
+  );
   if(showChangePassword) return(
     <ThemeCtx.Provider value={C}>
       <ChangePasswordScreen user={user} onDone={()=>setShowChangePassword(false)} onSkip={()=>setShowChangePassword(false)}/>
