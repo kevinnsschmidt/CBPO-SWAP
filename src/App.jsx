@@ -1106,6 +1106,7 @@ function SupportInbox({threads,currentUser,onOpen,onClose,onDeleteThread}){
 function AdminPanel({onClose,currentUser}){
   const C=useC();
   const [users,setUsers]=useState([]);
+  const [listings,setListings]=useState([]);
   const [loading,setLoading]=useState(true);
   const [tempPass,setTempPass]=useState('');
   const [resetDone,setResetDone]=useState(false);
@@ -1114,8 +1115,12 @@ function AdminPanel({onClose,currentUser}){
 
   async function loadUsers(){
     setLoading(true);
-    const {data}=await supabase.from('users').select('id,username,created_at').order('created_at',{ascending:false});
-    setUsers((data||[]).filter(u=>u.username!==currentUser.username));
+    const [{data:userData},{data:listingData}]=await Promise.all([
+      supabase.from('users').select('id,username,created_at,officer_type').order('created_at',{ascending:false}),
+      supabase.from('listings').select('user_id'),
+    ]);
+    setUsers((userData||[]).filter(u=>u.username!==currentUser.username));
+    setListings(listingData||[]);
     setLoading(false);
   }
 
@@ -1215,7 +1220,14 @@ function AdminPanel({onClose,currentUser}){
                 <User size={16} color={C.muted}/>
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:600,fontSize:14,color:C.text}}>{u.username}</div>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <div style={{fontWeight:600,fontSize:14,color:C.text}}>{u.username}</div>
+                  {listings.some(l=>l.user_id===u.id)
+                    ?<span style={{fontSize:10,fontWeight:700,color:C.green,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:4,padding:'1px 6px'}}>✓ Posted</span>
+                    :<span style={{fontSize:10,fontWeight:700,color:C.red,background:C.redDim,border:`1px solid ${C.redBorder}`,borderRadius:4,padding:'1px 6px'}}>No Post</span>
+                  }
+                  <span style={{fontSize:10,color:C.muted}}>{u.officer_type==='Agricultural Specialist'?'AS':'CBPO'}</span>
+                </div>
                 <div style={{fontSize:11,color:C.muted,marginTop:2}}>Joined {formatDate(u.created_at)}</div>
               </div>
               <div style={{display:'flex',gap:6,flexShrink:0}}>
@@ -1448,10 +1460,27 @@ export default function App(){
   }
 
   async function poll(){
-    // Fix 1: Check if current user still exists
+    // Check if user still exists
     if(user){
       const {data:userCheck}=await supabase.from('users').select('id').eq('id',user.id).maybeSingle();
       if(!userCheck){handleLogout();return;}
+    }
+    // Check announcements for ALL users (even without a listing)
+    if(!isAdmin&&user){
+      const {data:announcements}=await supabase.from('announcements').select('*').order('created_at',{ascending:false}).limit(1);
+      if(announcements?.length){
+        const latest=announcements[0];
+        const seenKey='cbpo-announcement-'+user.id;
+        const lastSeen=localStorage.getItem(seenKey);
+        if(lastSeen!==latest.id){
+          fireNativeNotif(latest.title,latest.body,null);
+          playMessageSound();
+          localStorage.setItem(seenKey,latest.id);
+          const stamped={type:'announcement',title:latest.title,body:latest.body,id:uuid(),createdAt:new Date().toISOString(),read:false};
+          setNotifs(prev=>{const u=[stamped,...prev];localStorage.setItem('cbpo-notifs',JSON.stringify(u));return u;});
+          setBellRing(true);setTimeout(()=>setBellRing(false),600);
+        }
+      }
     }
     if(!myListing) return;
     const {data:listData}=await supabase.from('listings').select('*').order('created_at');
@@ -1537,20 +1566,7 @@ export default function App(){
         }
       }
     }
-    // Check announcements for all users
-    if(!isAdmin){
-      const {data:announcements}=await supabase.from('announcements').select('*').order('created_at',{ascending:false}).limit(1);
-      if(announcements?.length){
-        const latest=announcements[0];
-        const seenKey='cbpo-announcement-'+user.id;
-        const lastSeen=localStorage.getItem(seenKey);
-        if(lastSeen!==latest.id){
-          newNotifItems.push({type:'announcement',title:latest.title,body:latest.body});
-          playMessageSound();
-          localStorage.setItem(seenKey,latest.id);
-        }
-      }
-    }
+    // Update lastRef
 
     lastRef.current={
       chainKeys:myChains.map(getChainKey),
