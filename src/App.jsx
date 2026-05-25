@@ -46,6 +46,7 @@ const PORTS = [
   'Ogdensburg, NY','Alexandria Bay, NY','Champlain, NY','Massena, NY','Albany, NY','Oswego, NY',
   // CHARLOTTE Field Office
   'Wilmington, NC','Beaufort-Morehead City, NC','Charleston, SC','Georgetown, SC',
+  'Raleigh-Durham, NC','Winston-Salem, NC',
   // CHICAGO Field Office
   "Chicago O'Hare, IL",'Indianapolis, IN','Louisville, KY','Cincinnati, OH','Columbus, OH',
   'Cleveland, OH','Minneapolis, MN','Milwaukee, WI','Kansas City, MO','St. Louis, MO',
