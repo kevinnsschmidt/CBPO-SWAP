@@ -141,7 +141,7 @@ function dbToListing(row){
     id:row.id, name:row.name, currentPort:row.current_port,
     desiredPorts:row.desired_ports, contact:row.contact,
     notes:row.notes||'', gsLevel:row.gs_level||'',
-    status:row.status||'', userId:row.user_id||'', createdAt:row.created_at,
+    status:row.status||'', userId:row.user_id||'', createdAt:row.created_at, officerType:row.officer_type||'CBP Officer',
   };
 }
 
@@ -150,13 +150,13 @@ function computeChains(ls){
   for(let i=0;i<ls.length;i++)
     for(let j=i+1;j<ls.length;j++){
       const [a,b]=[ls[i],ls[j]];
-      if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(a.currentPort)) two.push([a,b]);
+      if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(a.currentPort)&&a.officerType===b.officerType) two.push([a,b]);
     }
   for(let i=0;i<ls.length;i++)
     for(let j=0;j<ls.length;j++){if(j===i)continue;
       for(let k=0;k<ls.length;k++){if(k===i||k===j)continue;
         const [a,b,c]=[ls[i],ls[j],ls[k]];
-        if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(c.currentPort)&&c.desiredPorts.includes(a.currentPort)){
+        if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(c.currentPort)&&c.desiredPorts.includes(a.currentPort)&&a.officerType===b.officerType&&b.officerType===c.officerType){
           const key=[a.id,b.id,c.id].sort().join('|');
           if(!threeKeys.has(key)){threeKeys.add(key);three.push([a,b,c]);}
         }
@@ -556,9 +556,11 @@ function AuthScreen({onAuth}){
   const [password,setPassword]=useState('');
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(false);
+  const [officerType,setOfficerType]=useState('');
 
   async function handleSubmit(){
     if(!username.trim()||!password.trim()){setError('Fill in all fields');return;}
+    if(mode==='register'&&!officerType){setError('Please select your officer type');return;}
     if(password.length<6){setError('Password must be at least 6 characters');return;}
     setLoading(true);setError('');
     try{
@@ -570,7 +572,7 @@ function AuthScreen({onAuth}){
       } else {
         const {data:existing}=await supabase.from('users').select('id').eq('username',username.trim().toLowerCase()).maybeSingle();
         if(existing){setError('Username already taken');setLoading(false);return;}
-        const newUser={id:uuid(),username:username.trim().toLowerCase(),password_hash:hash};
+        const newUser={id:uuid(),username:username.trim().toLowerCase(),password_hash:hash,officer_type:officerType};
         const {error:insertErr}=await supabase.from('users').insert([newUser]);
         if(insertErr){setError('Registration failed. Try again.');setLoading(false);return;}
         onAuth(newUser);
@@ -619,6 +621,22 @@ function AuthScreen({onAuth}){
             background:loading?C.muted:C.green,transition:'background 0.2s'}}>
           {loading?'Please wait…':mode==='login'?'Log In':'Create Account'}
         </button>
+        {mode==='register'&&(
+          <div style={{marginBottom:16}}>
+            <label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>Officer Type *</label>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {['CBP Officer','Agricultural Specialist'].map(t=>(
+                <div key={t} onClick={()=>setOfficerType(t)}
+                  style={{padding:'11px 14px',borderRadius:8,border:`2px solid ${officerType===t?C.green:C.border}`,background:officerType===t?C.greenDim:'transparent',cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{width:18,height:18,borderRadius:'50%',border:`2px solid ${officerType===t?C.green:C.border}`,background:officerType===t?C.green:'transparent',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {officerType===t&&<div style={{width:8,height:8,borderRadius:'50%',background:'#fff'}}/>}
+                  </div>
+                  <span style={{fontSize:14,fontWeight:600,color:officerType===t?C.green:C.text}}>{t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{textAlign:'center',marginTop:14,fontSize:12,color:C.muted}}>
           {mode==='login'?'No account? ':'Already have one? '}
           <button onClick={()=>{setMode(mode==='login'?'register':'login');setError('');}}
@@ -1244,7 +1262,7 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
       }).eq('id',existingListing.id);
       if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
     } else {
-      const row={id:uuid(),name:currentUser.username,current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel,status:form.status,user_id:currentUser.id};
+      const row={id:uuid(),name:currentUser.username,current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel,status:form.status,user_id:currentUser.id,officer_type:currentUser.officer_type||'CBP Officer'};
       const {error}=await supabase.from('listings').insert([row]);
       if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
     }
@@ -1630,9 +1648,11 @@ export default function App(){
   function clearAllNotifs(){setNotifs([]);localStorage.setItem('cbpo-notifs',JSON.stringify([]));}
   async function requestNotifPermission(){if('Notification' in window){const p=await Notification.requestPermission();setNotifPerm(p);}}
 
+  const myOfficerType=user?.officer_type||'CBP Officer';
+  const visibleListings=isAdmin?listings:listings.filter(l=>l.officerType===myOfficerType);
   const filtered=filter.trim()
-    ?listings.filter(l=>l.currentPort.toLowerCase().includes(filter.toLowerCase())||l.desiredPorts.some(p=>p.toLowerCase().includes(filter.toLowerCase()))||(l.gsLevel&&l.gsLevel.toLowerCase().includes(filter.toLowerCase()))||(l.status&&l.status.toLowerCase().includes(filter.toLowerCase())))
-    :listings;
+    ?visibleListings.filter(l=>l.currentPort.toLowerCase().includes(filter.toLowerCase())||l.desiredPorts.some(p=>p.toLowerCase().includes(filter.toLowerCase()))||(l.gsLevel&&l.gsLevel.toLowerCase().includes(filter.toLowerCase()))||(l.status&&l.status.toLowerCase().includes(filter.toLowerCase())))
+    :visibleListings;
 
   const totalMatches=isAdmin?chains.two.length+chains.three.length:[...chains.two,...chains.three].filter(officers=>myListing&&officers.some(o=>o.id===myListing.id)).length;
   const unreadCount=notifs.filter(n=>!n.read).length;
@@ -1754,7 +1774,7 @@ export default function App(){
                           <ArrowRight size={10} color={C.muted}/>
                           <span style={{fontSize:13,color:C.green}}>{l.desiredPorts.map(p=>p.split(',')[0]).join(', ')}</span>
                         </div>
-                        {isAdmin&&<div style={{fontSize:12,color:C.text,fontWeight:500,marginTop:2}}>{l.name}</div>}
+                        {isAdmin&&<div style={{fontSize:12,color:C.text,fontWeight:500,marginTop:2}}>{l.name} · <span style={{color:l.officerType==='Agricultural Specialist'?C.gold:C.blue,fontSize:11}}>{l.officerType==='Agricultural Specialist'?'AS':'CBPO'}</span></div>}
                         <div style={{display:'flex',gap:6,marginTop:3,alignItems:'center',flexWrap:'wrap'}}>
                           {l.gsLevel&&<span style={{fontSize:10,fontWeight:700,color:C.purple}}>{l.gsLevel}</span>}
                           {l.status&&<span style={{fontSize:10,fontWeight:600,color:C.gold}}>{l.status}</span>}
