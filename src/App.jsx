@@ -1302,7 +1302,7 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
         <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}
           style={{...inp(C),cursor:'pointer',appearance:'none'}}>
           <option value=''>Select status...</option>
-          {['Pre-Academy','FLETC','Post-Academy','Officer'].map(s=>(
+          {['Pre-Academy','FLETC','Post-Academy','Officer','Specialist'].map(s=>(
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
