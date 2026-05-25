@@ -1366,7 +1366,6 @@ export default function App(){
   const [supportThreads,setSupportThreads]=useState([]);
   const [unreadSupport,setUnreadSupport]=useState(0);
   const supportRealtimeRef=useRef(null);
-  const [lastAnnouncementRef]=useState({id:null});
 
   const myListing=listings.find(l=>l.userId===user?.id)||null;
   const isAdmin=user?.username===ADMIN;
@@ -1543,12 +1542,12 @@ export default function App(){
       const {data:announcements}=await supabase.from('announcements').select('*').order('created_at',{ascending:false}).limit(1);
       if(announcements?.length){
         const latest=announcements[0];
-        if(lastAnnouncementRef.id!==latest.id){
-          if(lastAnnouncementRef.id!==null){
-            newNotifItems.push({type:'announcement',title:latest.title,body:latest.body});
-            playMessageSound();
-          }
-          lastAnnouncementRef.id=latest.id;
+        const seenKey='cbpo-announcement-'+user.id;
+        const lastSeen=localStorage.getItem(seenKey);
+        if(lastSeen!==latest.id){
+          newNotifItems.push({type:'announcement',title:latest.title,body:latest.body});
+          playMessageSound();
+          localStorage.setItem(seenKey,latest.id);
         }
       }
     }
