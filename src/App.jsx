@@ -1639,6 +1639,10 @@ export default function App(){
   function handleLogin(u,rawPassword){
     setUser(u);
     localStorage.setItem('cbpo-user',JSON.stringify(u));
+    // Check terms per user
+    const userTermsKey='cbpo-terms-'+u.id;
+    if(localStorage.getItem(userTermsKey)===TERMS_VERSION) setTermsAccepted(true);
+    else setTermsAccepted(false);
     // If password looks like a temp password (cbpo + 4 digits), prompt to change
     if(rawPassword&&/^cbpo\d{4}$/.test(rawPassword)) setShowChangePassword(true);
   }
