@@ -42,7 +42,7 @@ const PORTS = [
   'Salem, MA','Provincetown, MA','Bridgeport, CT','New Haven, CT','New London, CT',
   'Newport, RI','Mellville, RI',
   // BUFFALO Field Office
-  'Buffalo, NY (Niagara Falls)','Niagara Falls, NY','Rochester, NY','Syracuse, NY',
+  'Buffalo, NY (Airport)','Buffalo, NY (Niagara Falls Land Border)','Niagara Falls, NY','Rochester, NY','Syracuse, NY',
   'Ogdensburg, NY','Alexandria Bay, NY','Champlain, NY','Massena, NY','Albany, NY','Oswego, NY',
   // CHARLOTTE Field Office
   'Wilmington, NC','Beaufort-Morehead City, NC','Charleston, SC','Georgetown, SC',
@@ -53,7 +53,7 @@ const PORTS = [
   'Omaha, NE','Des Moines, IA','Duluth, MN','International Falls, MN',
   'Marinette, WI','Green Bay, WI','Gary, IN','Toledo, OH','Erie, PA','Ashtabula, OH',
   // DETROIT Field Office
-  'Detroit, MI (Metropolitan)','Port Huron, MI','Sault Ste. Marie, MI','Grand Rapids, MI',
+  'Detroit, MI (Metropolitan Airport)','Detroit, MI (Land Border)','Port Huron, MI','Sault Ste. Marie, MI','Grand Rapids, MI',
   'Saginaw/Bay City, MI','Battle Creek, MI','Escanaba, MI','Marquette, MI',
   'Muskegon, MI','Grand Haven, MI','Rogers City, MI',
   // EL PASO Field Office
