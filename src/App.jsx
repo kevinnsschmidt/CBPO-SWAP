@@ -148,18 +148,46 @@ function dbToListing(row){
 
 function computeChains(ls){
   const two=[],threeKeys=new Set(),three=[];
-  for(let i=0;i<ls.length;i++)
-    for(let j=i+1;j<ls.length;j++){
-      const [a,b]=[ls[i],ls[j]];
-      if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(a.currentPort)&&a.officerType===b.officerType) two.push([a,b]);
+
+  // 2-way: one match per (listingA.currentPort + desired port) pair — earliest partner wins
+  const twoWayKeys=new Set();
+  const sorted=[...ls].sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  for(let i=0;i<sorted.length;i++)
+    for(let j=0;j<sorted.length;j++){
+      if(j===i) continue;
+      const [a,b]=[sorted[i],sorted[j]];
+      if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(a.currentPort)&&a.officerType===b.officerType){
+        // Key: each listing only gets one match per desired port
+        const keyA=a.id+'->'+b.currentPort;
+        const keyB=b.id+'->'+a.currentPort;
+        if(!twoWayKeys.has(keyA)&&!twoWayKeys.has(keyB)){
+          twoWayKeys.add(keyA);
+          twoWayKeys.add(keyB);
+          two.push([a,b]);
+        }
+      }
     }
-  for(let i=0;i<ls.length;i++)
-    for(let j=0;j<ls.length;j++){if(j===i)continue;
-      for(let k=0;k<ls.length;k++){if(k===i||k===j)continue;
-        const [a,b,c]=[ls[i],ls[j],ls[k]];
+
+  // 3-way: one chain per listing — prioritize first desired port
+  const threeWayKeys=new Set();
+  const sortedFor3=[...ls].sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  for(let i=0;i<sortedFor3.length;i++)
+    for(let j=0;j<sortedFor3.length;j++){if(j===i)continue;
+      for(let k=0;k<sortedFor3.length;k++){if(k===i||k===j)continue;
+        const [a,b,c]=[sortedFor3[i],sortedFor3[j],sortedFor3[k]];
         if(a.desiredPorts.includes(b.currentPort)&&b.desiredPorts.includes(c.currentPort)&&c.desiredPorts.includes(a.currentPort)&&a.officerType===b.officerType&&b.officerType===c.officerType){
           const key=[a.id,b.id,c.id].sort().join('|');
-          if(!threeKeys.has(key)){threeKeys.add(key);three.push([a,b,c]);}
+          // Each listing only gets one 3-way chain
+          const keyA='3way-'+a.id;
+          const keyB='3way-'+b.id;
+          const keyC='3way-'+c.id;
+          if(!threeKeys.has(key)&&!threeWayKeys.has(keyA)&&!threeWayKeys.has(keyB)&&!threeWayKeys.has(keyC)){
+            threeKeys.add(key);
+            threeWayKeys.add(keyA);
+            threeWayKeys.add(keyB);
+            threeWayKeys.add(keyC);
+            three.push([a,b,c]);
+          }
         }
       }
     }
