@@ -104,6 +104,7 @@ const PORTS = [
   'Skagway, AK','Wrangell, AK','Kodiak, AK','Dalton Cache, AK',
   // TUCSON Field Office
   'Tucson, AZ','Nogales, AZ','Douglas, AZ','Lukeville, AZ','Naco, AZ','Sasabe, AZ','Yuma, AZ',
+  'San Luis, AZ (SLU1 - Land Border)','San Luis, AZ (SLU2 - Cargo)',
 ].sort();
 
 const POLL_MS = 15 * 1000;
