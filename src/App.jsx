@@ -1288,36 +1288,19 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
     status:existingListing?.status||'',
   });
   const [postStatus,setPostStatus]=useState(null);
-  const [showConfirm,setShowConfirm]=useState(false);
   const isEdit=!!existingListing;
-  
-  // Only reset if existing ports were removed or reordered (not if new ones were just added)
-  const originalPorts=existingListing?.desiredPorts||[];
-  const desiredPortsChanged=isEdit&&(
-    // A port was removed
-    originalPorts.some(p=>!form.desiredPorts.includes(p))||
-    // Order of existing ports changed
-    originalPorts.filter(p=>form.desiredPorts.includes(p)).some((p,i)=>form.desiredPorts.indexOf(p)!==i)
-  );
 
-  function handleSubmitClick(){
+  async function submit(){
     if(!form.currentPort||!form.desiredPorts.length||!form.contact.trim()){
       setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;
     }
-    setShowConfirm(true);
-  }
-
-  async function submit(){
     setPostStatus('saving');
     if(isEdit){
-      const updateData={
+      const {error}=await supabase.from('listings').update({
         current_port:form.currentPort,desired_ports:form.desiredPorts,
         contact:form.contact.trim(),notes:form.notes.trim(),
         gs_level:form.gsLevel,status:form.status,
-      };
-      // Reset created_at if desired ports changed
-      if(desiredPortsChanged) updateData.created_at=new Date().toISOString();
-      const {error}=await supabase.from('listings').update(updateData).eq('id',existingListing.id);
+      }).eq('id',existingListing.id);
       if(error){setPostStatus('error');setTimeout(()=>setPostStatus(null),2500);return;}
     } else {
       const row={id:uuid(),name:currentUser.username,current_port:form.currentPort,desired_ports:form.desiredPorts,contact:form.contact.trim(),notes:form.notes.trim(),gs_level:form.gsLevel,status:form.status,user_id:currentUser.id,officer_type:currentUser.officer_type||'CBP Officer'};
@@ -1327,48 +1310,6 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
     setPostStatus('saved');
     setTimeout(()=>onPosted(),1200);
   }
-  
-  // Confirmation screen
-  if(showConfirm) return(
-    <div style={{padding:16,fontFamily:"'Inter',sans-serif"}}>
-      <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:4}}>Confirm Your Priorities</div>
-      <div style={{fontSize:13,color:C.subtle,marginBottom:20,lineHeight:1.5}}>
-        Your desired locations are listed in priority order. The app will match you starting from #1. 
-        {isEdit&&desiredPortsChanged&&<span style={{color:C.gold}}> Note: changing desired locations will reset your queue position.</span>}
-      </div>
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:14,marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:10}}>Current Station</div>
-        <div style={{fontSize:15,fontWeight:700,color:C.red,marginBottom:16}}>{form.currentPort}</div>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:10}}>Desired Stations — Priority Order</div>
-        {form.desiredPorts.map((p,i)=>(
-          <div key={p} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:i<form.desiredPorts.length-1?`1px solid ${C.border}`:'none'}}>
-            <div style={{width:24,height:24,borderRadius:'50%',background:i===0?C.green:i===1?C.gold:C.surface2,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <span style={{fontSize:11,fontWeight:700,color:i<2?'#fff':C.muted}}>#{i+1}</span>
-            </div>
-            <span style={{fontSize:14,color:C.text}}>{p}</span>
-            {i===0&&<span style={{fontSize:10,fontWeight:700,color:C.green,background:C.greenDim,border:`1px solid ${C.greenBorder}`,borderRadius:4,padding:'1px 6px',marginLeft:'auto'}}>First Priority</span>}
-          </div>
-        ))}
-      </div>
-      <div style={{fontSize:12,color:C.muted,marginBottom:20,lineHeight:1.5,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:'10px 14px'}}>
-        ⚠️ If you need to change the order, tap Back and re-add your locations in the correct priority order.
-      </div>
-      {postStatus==='saving'?(
-        <div style={{textAlign:'center',padding:20,color:C.muted}}>Saving...</div>
-      ):(
-        <>
-          <button onClick={submit}
-            style={{width:'100%',border:'none',borderRadius:8,color:'#fff',padding:'13px',fontSize:15,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",background:C.green,marginBottom:10}}>
-            {isEdit?'Confirm & Save':'Confirm & Post'}
-          </button>
-          <button onClick={()=>setShowConfirm(false)}
-            style={{width:'100%',border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:'11px',fontSize:14,fontWeight:600,cursor:'pointer',fontFamily:"'Inter',sans-serif",background:'none'}}>
-            Back — Change Order
-          </button>
-        </>
-      )}
-    </div>
-  );
 
   return(
     <div style={{padding:16,fontFamily:"'Inter',sans-serif"}}>
@@ -1405,16 +1346,8 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
           multi selected={form.desiredPorts}
           onSelect={p=>setForm(f=>({...f,desiredPorts:f.desiredPorts.includes(p)?f.desiredPorts.filter(d=>d!==p):[...f.desiredPorts,p]}))}/>
         {form.desiredPorts.length>0&&(
-          <div style={{display:'flex',flexDirection:'column',gap:4,marginTop:8}}>
-            {form.desiredPorts.map((p,i)=>(
-              <div key={p} style={{display:'flex',alignItems:'center',gap:8,background:C.surface,border:`1px solid ${C.border}`,borderRadius:7,padding:'7px 10px'}}>
-                <div style={{width:20,height:20,borderRadius:'50%',background:i===0?C.green:i===1?C.gold:C.surface2,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <span style={{fontSize:10,fontWeight:700,color:i<2?'#fff':C.muted}}>#{i+1}</span>
-                </div>
-                <span style={{fontSize:13,color:C.text,flex:1}}>{p}</span>
-                <X size={13} style={{cursor:'pointer',color:C.muted}} onClick={()=>setForm(f=>({...f,desiredPorts:f.desiredPorts.filter(d=>d!==p)}))}/>
-              </div>
-            ))}
+          <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:8}}>
+            {form.desiredPorts.map(p=><PortTag key={p} label={p} onRemove={()=>setForm(f=>({...f,desiredPorts:f.desiredPorts.filter(d=>d!==p)}))}/>)}
           </div>
         )}
       </div>
@@ -1428,8 +1361,8 @@ function PostForm({currentUser,onPosted,onCancel,existingListing}){
       </div>
       <button onClick={submit} disabled={postStatus==='saving'||postStatus==='saved'}
         style={{width:'100%',border:'none',borderRadius:8,color:'#fff',padding:'13px',fontSize:15,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",
-          background:postStatus==='error'?'#dc2626':C.green,transition:'background 0.2s',marginBottom:10}}>
-        {postStatus==='error'?'Fill required fields':isEdit?'Review & Save':'Review & Post'}
+          background:postStatus==='saved'?'#059669':postStatus==='error'?'#dc2626':C.green,transition:'background 0.2s',marginBottom:10}}>
+        {postStatus==='saving'?(isEdit?'Saving…':'Posting…'):postStatus==='saved'?'✓ Saved!':postStatus==='error'?'Fill required fields':isEdit?'Save Changes':'Post Swap Request'}
       </button>
       {onCancel&&(
         <button onClick={onCancel}
@@ -1445,7 +1378,14 @@ export default function App(){
   const [dark,setDark]=useState(()=>localStorage.getItem('cbpo-dark')==='true');
   const C=dark?DARK:LIGHT;
   const [user,setUser]=useState(()=>{try{return JSON.parse(localStorage.getItem('cbpo-user'));}catch{return null;}});
-  const [termsAccepted,setTermsAccepted]=useState(()=>localStorage.getItem('cbpo-terms')==='true');
+  const TERMS_VERSION='v1';
+  const [termsAccepted,setTermsAccepted]=useState(()=>{
+    try{
+      const u=JSON.parse(localStorage.getItem('cbpo-user'));
+      if(!u) return false;
+      return localStorage.getItem('cbpo-terms-'+u.id)===TERMS_VERSION;
+    }catch{return false;}
+  });
   const [screen,setScreen]=useState('main');
   const [tab,setTab]=useState('board');
   const [listings,setListings]=useState([]);
@@ -1757,7 +1697,7 @@ export default function App(){
     // If password looks like a temp password (cbpo + 4 digits), prompt to change
     if(rawPassword&&/^cbpo\d{4}$/.test(rawPassword)) setShowChangePassword(true);
   }
-  function handleLogout(){setUser(null);localStorage.removeItem('cbpo-user');setListings([]);setLocks({});setNotifs([]);setSettingsPanel(false);}
+  function handleLogout(){setUser(null);localStorage.removeItem('cbpo-user');setListings([]);setNotifs([]);setSettingsPanel(false);}
   function toggleDark(){const nd=!dark;setDark(nd);localStorage.setItem('cbpo-dark',String(nd));}
   function markAllRead(){const u=notifs.map(n=>({...n,read:true}));setNotifs(u);localStorage.setItem('cbpo-notifs',JSON.stringify(u));}
   function clearAllNotifs(){setNotifs([]);localStorage.setItem('cbpo-notifs',JSON.stringify([]));}
@@ -1776,7 +1716,7 @@ export default function App(){
   if(!user) return(<ThemeCtx.Provider value={C}><AuthScreen onAuth={handleLogin}/></ThemeCtx.Provider>);
   if(!termsAccepted) return(
     <ThemeCtx.Provider value={C}>
-      <TermsScreen onAccept={()=>{localStorage.setItem('cbpo-terms','true');setTermsAccepted(true);}}/>
+      <TermsScreen onAccept={()=>{localStorage.setItem('cbpo-terms-'+user.id,TERMS_VERSION);setTermsAccepted(true);}}/>
     </ThemeCtx.Provider>
   );
   if(showChangePassword) return(
